@@ -1,0 +1,19 @@
+[submodule "dependencies/glfw"]
+	path = dependencies/glfw
+	url = https://github.com/glfw/glfw.git
+
+[submodule "dependencies/imgui"]
+	path = dependencies/imgui
+	url = https://github.com/ocornut/imgui.git
+	
+[submodule "dependencies/vma"]
+	path = dependencies/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+
+[submodule "dependencies/glm"]
+	path = dependencies/glm
+	url = https://github.com/g-truc/glm.git
+	
+[submodule "dependencies/tinyply"]
+	path = dependencies/tinyply
+	url = https://github.com/ddiakopoulos/tinyply.git
