@@ -75,7 +75,6 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${Vulkan_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/test
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui
         ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan
         ${CMAKE_CURRENT_SOURCE_DIR}/src/3dgrt
