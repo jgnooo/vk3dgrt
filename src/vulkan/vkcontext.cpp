@@ -55,6 +55,12 @@ void VkContext::createInstance()
 }
 
 
+void VkContext::createSurface(GLFWwindow* window)
+{
+    VK_CHECK(glfwCreateWindowSurface(instance, window, nullptr, &surface));
+}
+
+
 void VkContext::cleanup()
 {
     vkDestroyInstance(instance, nullptr);

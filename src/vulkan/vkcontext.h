@@ -9,10 +9,12 @@ struct GLFWwindow;
 
 struct VkContext
 {
-    VkInstance instance = VK_NULL_HANDLE;
+    VkInstance   instance = VK_NULL_HANDLE;
+    VkSurfaceKHR surface  = VK_NULL_HANDLE;
 
     void initialize(GLFWwindow* window);
     void createInstance();
+    void createSurface(GLFWwindow* window);
     void cleanup();
 };
 
