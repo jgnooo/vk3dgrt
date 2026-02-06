@@ -65,6 +65,10 @@ target_include_directories(tinyply INTERFACE ${TINYPLY_DIR}/source)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    
+    # Vulkan
+    src/vulkan/vkcontext.h
+    src/vulkan/vkcontext.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
