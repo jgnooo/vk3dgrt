@@ -2,6 +2,7 @@
 #define VKCONTEXT_H
 
 #include <vulkan/vulkan_core.h>
+#include <vk_mem_alloc.h>
 
 #include <map>
 
@@ -25,6 +26,8 @@ struct VkContext
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice         device         = VK_NULL_HANDLE;
 
+    VmaAllocator allocator = VK_NULL_HANDLE;
+
     std::map<QueueType, VkQueue>  queues;
     std::map<QueueType, uint32_t> queueFamilyIndices;
 
@@ -32,6 +35,7 @@ struct VkContext
     void createInstance();
     void createSurface(GLFWwindow* window);
     void createDevice();
+    void createAllocator();
     void cleanup();
 };
 

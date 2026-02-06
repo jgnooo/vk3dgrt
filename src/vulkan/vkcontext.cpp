@@ -63,6 +63,7 @@ void VkContext::initialize(GLFWwindow* window)
     createInstance();
     createSurface(window);
     createDevice();
+    createAllocator();
 }
 
 
@@ -325,9 +326,37 @@ void VkContext::createDevice()
 }
 
 
+void VkContext::createAllocator()
+{
+    VmaVulkanFunctions vulkanFunctions{
+        .vkGetInstanceProcAddr = vkGetInstanceProcAddr,
+        .vkGetDeviceProcAddr   = vkGetDeviceProcAddr
+    };
+
+    VmaAllocatorCreateInfo allocatorInfo{
+        .flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT |
+                            VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT,
+        .physicalDevice   = physicalDevice,
+        .device           = device,
+        .pVulkanFunctions = &vulkanFunctions,
+        .instance         = instance,
+        .vulkanApiVersion = VK_API_VERSION_1_3
+    };
+
+    VK_CHECK(vmaCreateAllocator(&allocatorInfo, &allocator));
+
+    printf(" >> VMA Allocator created successfully.\n");
+}
+
+
 void VkContext::cleanup()
 {
     vkDeviceWaitIdle(device);
+    if (allocator != VK_NULL_HANDLE)
+    {
+        vmaDestroyAllocator(allocator);
+        allocator = VK_NULL_HANDLE;
+    }
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
