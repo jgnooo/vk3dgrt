@@ -1,3 +1,5 @@
+#define VMA_IMPLEMENTATION
+
 #include "vkcontext.h"
 #include "vkerror.h"
 
@@ -7,6 +9,10 @@
 #include <set>
 #include <algorithm>
 
+
+// --------------------------------------------------- //
+//  Helper Functions
+// --------------------------------------------------- //
 
 static void printGpuInfo(uint32_t order, VkPhysicalDevice physicalDevice)
 {
@@ -57,6 +63,10 @@ static bool deviceSupportsExtensions(VkPhysicalDevice physicalDevice,
     });
 }
 
+
+// --------------------------------------------------- //
+//  VkContext Implementation
+// --------------------------------------------------- //
 
 void VkContext::initialize(GLFWwindow* window)
 {
@@ -359,4 +369,143 @@ void VkContext::cleanup()
     }
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
+}
+
+
+// --------------------------------------------------- //
+//  VkSwapchain Implementation
+// --------------------------------------------------- //
+
+void VkSwapchain::create(VkContext* context, uint32_t width, uint32_t height)
+{
+    VkSurfaceKHR surface = context->getSurface();
+    VkPhysicalDevice physicalDevice = context->getPhysicalDevice();
+
+    VkSurfaceCapabilitiesKHR capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+
+    if (capabilities.currentExtent.width != UINT32_MAX)
+    {
+        extent = capabilities.currentExtent;
+    }
+    else
+    {
+        extent.width  = std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        extent.height = std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+    }
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+    std::vector<VkSurfaceFormatKHR> formats(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+
+    VkSurfaceFormatKHR selectedFormat = formats[0];
+    for (const auto& fmt : formats)
+    {
+        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM && fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            selectedFormat = fmt;
+            break;
+        }
+    }
+    VkFormat swapchainFormat = selectedFormat.format;
+
+    VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    VkFormatProperties formatProps;
+    vkGetPhysicalDeviceFormatProperties(physicalDevice, swapchainFormat, &formatProps);
+    if ((imageUsage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) &&
+        !(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
+        throw std::runtime_error("[VkSwapchain] Selected swapchain format does not support color attachment.");
+
+    if ((imageUsage & VK_IMAGE_USAGE_STORAGE_BIT) &&
+        !(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+        throw std::runtime_error("[VkSwapchain] Selected swapchain format does not support storage image.");
+
+    if ((imageUsage & VK_IMAGE_USAGE_TRANSFER_DST_BIT) &&
+        !(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT))
+        throw std::runtime_error("[VkSwapchain] Selected swapchain format does not support transfer dst.");
+
+    VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+    std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+
+    for (const auto& pm : presentModes)
+    {
+        if (pm == VK_PRESENT_MODE_MAILBOX_KHR)
+        {
+            presentMode = pm;
+            break;
+        }
+    }
+
+    uint32_t minSwapChainImages = capabilities.minImageCount + 1;
+    if (capabilities.maxImageCount > 0 && minSwapChainImages > capabilities.maxImageCount)
+        minSwapChainImages = capabilities.maxImageCount;
+
+    VkSwapchainCreateInfoKHR createInfo{
+        .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .surface          = surface,
+        .minImageCount    = minSwapChainImages,
+        .imageFormat      = swapchainFormat,
+        .imageColorSpace  = selectedFormat.colorSpace,
+        .imageExtent      = extent,
+        .imageArrayLayers = 1,
+        .imageUsage       = imageUsage,
+        .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .preTransform     = capabilities.currentTransform,
+        .compositeAlpha   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .presentMode      = presentMode,
+        .clipped          = VK_TRUE
+    };
+
+    VkDevice device = context->getDevice();
+
+    VK_CHECK(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain));
+
+    format = swapchainFormat;
+
+    vkGetSwapchainImagesKHR(device, swapchain, &minSwapChainImages, nullptr);
+    images.resize(minSwapChainImages);
+    vkGetSwapchainImagesKHR(device, swapchain, &minSwapChainImages, images.data());
+
+    imageViews.resize(images.size());
+    for (size_t i = 0; i < images.size(); ++i)
+    {
+        VkImageViewCreateInfo viewInfo{
+            .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image      = images[i],
+            .viewType   = VK_IMAGE_VIEW_TYPE_2D,
+            .format     = swapchainFormat,
+            .components = {
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            .subresourceRange = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        };
+        VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &imageViews[i]));
+    }
+}
+
+
+void VkSwapchain::cleanup(VkDevice device)
+{
+    for (auto imageView : imageViews)
+        vkDestroyImageView(device, imageView, nullptr);
+
+    imageViews.clear();
+    images.clear();
+
+    vkDestroySwapchainKHR(device, swapchain, nullptr);
 }

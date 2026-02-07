@@ -5,6 +5,7 @@
 #include <vk_mem_alloc.h>
 
 #include <map>
+#include <vector>
 
 
 struct GLFWwindow;
@@ -37,6 +38,25 @@ struct VkContext
     void createDevice();
     void createAllocator();
     void cleanup();
+
+    // Getters
+    VkSurfaceKHR     getSurface() const        { return surface; }
+    VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+    VkDevice         getDevice() const         { return device; }
+};
+
+
+struct VkSwapchain
+{
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    VkFormat       format    = VK_FORMAT_UNDEFINED;
+    VkExtent2D     extent    = {0, 0};
+
+    std::vector<VkImage>     images;
+    std::vector<VkImageView> imageViews;
+
+    void create(VkContext* context, uint32_t width, uint32_t height);
+    void cleanup(VkDevice device);
 };
 
 #endif // VKCONTEXT_H

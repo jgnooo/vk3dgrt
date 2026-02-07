@@ -14,7 +14,7 @@ int main()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(1028, 720, "Vulkan Window", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Vulkan Window", nullptr, nullptr);
 
     if (!window)
         throw std::runtime_error("[VkEngine] Failed to create GLFW window.");
