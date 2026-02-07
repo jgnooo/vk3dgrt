@@ -67,8 +67,12 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     
     # Vulkan
+    src/vulkan/vkerror.h
     src/vulkan/vkcontext.h
     src/vulkan/vkcontext.cpp
+    src/vulkan/vkprovider.h
+    src/vulkan/vkbuffer.h
+    src/vulkan/vkbuffer.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

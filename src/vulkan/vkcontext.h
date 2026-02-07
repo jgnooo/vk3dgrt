@@ -55,6 +55,7 @@ struct VkContext
     VkSurfaceKHR     getSurface() const        { return surface; }
     VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
     VkDevice         getDevice() const         { return device; }
+    VmaAllocator     getAllocator() const      { return allocator; }
 };
 
 
