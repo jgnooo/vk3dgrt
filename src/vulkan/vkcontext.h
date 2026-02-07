@@ -19,6 +19,16 @@ enum class QueueType
 };
 
 
+struct RtProperties
+{
+    const uint32_t shaderGroupHandleSize                          = 32;
+    uint32_t       shaderGroupHandleAlignment                     = 0;
+    uint32_t       shaderGroupBaseAlignment                       = 0;
+    uint32_t       minAccelerationStructureScratchOffsetAlignment = 0;
+    const uint32_t asBufferOffsetAlignment                        = 256;
+};
+
+
 struct VkContext
 {
     VkInstance   instance = VK_NULL_HANDLE;
@@ -59,16 +69,6 @@ struct VkSwapchain
 
     void create(VkContext* context, uint32_t width, uint32_t height);
     void cleanup(VkDevice device);
-};
-
-
-struct RtProperties
-{
-    const uint32_t shaderGroupHandleSize                          = 32;
-    uint32_t       shaderGroupHandleAlignment                     = 0;
-    uint32_t       shaderGroupBaseAlignment                       = 0;
-    uint32_t       minAccelerationStructureScratchOffsetAlignment = 0;
-    const uint32_t asBufferOffsetAlignment                        = 256;
 };
 
 
