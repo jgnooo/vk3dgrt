@@ -29,6 +29,8 @@ struct VkContext
 
     VmaAllocator allocator = VK_NULL_HANDLE;
 
+    RtProperties rtProps;
+
     std::map<QueueType, VkQueue>  queues;
     std::map<QueueType, uint32_t> queueFamilyIndices;
 
@@ -58,5 +60,27 @@ struct VkSwapchain
     void create(VkContext* context, uint32_t width, uint32_t height);
     void cleanup(VkDevice device);
 };
+
+
+struct RtProperties
+{
+    const uint32_t shaderGroupHandleSize                          = 32;
+    uint32_t       shaderGroupHandleAlignment                     = 0;
+    uint32_t       shaderGroupBaseAlignment                       = 0;
+    uint32_t       minAccelerationStructureScratchOffsetAlignment = 0;
+    const uint32_t asBufferOffsetAlignment                        = 256;
+};
+
+
+extern PFN_vkGetBufferDeviceAddressKHR                vkGetBufferDeviceAddressKHR_;
+extern PFN_vkCreateAccelerationStructureKHR           vkCreateAccelerationStructureKHR_;
+extern PFN_vkDestroyAccelerationStructureKHR          vkDestroyAccelerationStructureKHR_;
+extern PFN_vkGetAccelerationStructureBuildSizesKHR    vkGetAccelerationStructureBuildSizesKHR_;
+extern PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR_;
+extern PFN_vkCmdBuildAccelerationStructuresKHR        vkCmdBuildAccelerationStructuresKHR_;
+extern PFN_vkCreateRayTracingPipelinesKHR             vkCreateRayTracingPipelinesKHR_;
+extern PFN_vkGetRayTracingShaderGroupHandlesKHR       vkGetRayTracingShaderGroupHandlesKHR_;
+extern PFN_vkCmdTraceRaysKHR                          vkCmdTraceRaysKHR_;
+
 
 #endif // VKCONTEXT_H
