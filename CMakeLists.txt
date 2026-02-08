@@ -73,6 +73,8 @@ add_executable(${PROJECT_NAME}
     src/vulkan/vkprovider.h
     src/vulkan/vkbuffer.h
     src/vulkan/vkbuffer.cpp
+    src/vulkan/vkimage.h
+    src/vulkan/vkimage.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
