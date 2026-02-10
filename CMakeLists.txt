@@ -77,6 +77,8 @@ add_executable(${PROJECT_NAME}
     src/vulkan/vkimage.cpp
     src/vulkan/vkaccelstruct.h
     src/vulkan/vkaccelstruct.cpp
+    src/vulkan/vkpipeline.h
+    src/vulkan/vkpipeline.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
