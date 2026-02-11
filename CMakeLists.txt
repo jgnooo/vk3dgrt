@@ -79,6 +79,9 @@ add_executable(${PROJECT_NAME}
     src/vulkan/vkaccelstruct.cpp
     src/vulkan/vkpipeline.h
     src/vulkan/vkpipeline.cpp
+
+    # 3DGRT
+    src/3dgrt/gaussian-data.h
 )
 
 target_include_directories(${PROJECT_NAME}
