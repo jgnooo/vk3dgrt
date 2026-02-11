@@ -84,6 +84,7 @@ add_executable(${PROJECT_NAME}
     src/3dgrt/gaussian-data.h
     src/3dgrt/gaussian-loader.h
     src/3dgrt/gaussian-loader.cpp
+    src/3dgrt/icosahedron.h
 )
 
 target_include_directories(${PROJECT_NAME}
