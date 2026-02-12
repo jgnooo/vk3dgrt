@@ -36,8 +36,11 @@ struct AccelerationStructureInstance
 struct AccelerationStructureBuilder
 {
     VkContext* context = nullptr;
+    
+    std::vector<AllocatedBuffer> pendingCleanup;
 
     void init(VkContext* ctx);
+    void releasePendingBuffers();
 
     AccelerationStructure buildBlas(VkCommandBuffer cmdBuffer,
                                     VkDeviceAddress vertexBuffer,
@@ -56,6 +59,20 @@ struct AccelerationStructureBuilder
                                     VkDeviceAddress instanceBuffer,
                                     uint32_t instanceCount,
                                     VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+
+    bool updateTlas(VkCommandBuffer cmdBuffer,
+                    AccelerationStructure& existingTlas,
+                    const std::vector<AccelerationStructureInstance>& instances,
+                    VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                                                 VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR);
+
+    VkQueryPool queryCompactedSize(VkCommandBuffer cmdBuffer, VkAccelerationStructureKHR accelerationStructure);
+
+    VkDeviceSize readCompactedSize(VkQueryPool queryPool);
+
+    AccelerationStructure compactBlas(VkCommandBuffer cmdBuffer,
+                                      VkAccelerationStructureKHR originalAs,
+                                      VkDeviceSize compactedSize);
 
 private:
     AllocatedBuffer createScratchBuffer(VkDeviceSize size);
