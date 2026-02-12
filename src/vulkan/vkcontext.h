@@ -6,6 +6,7 @@
 
 #include <map>
 #include <vector>
+#include <cstdint>
 
 
 struct GLFWwindow;
@@ -73,15 +74,17 @@ struct VkSwapchain
 };
 
 
-extern PFN_vkGetBufferDeviceAddressKHR                vkGetBufferDeviceAddressKHR_;
-extern PFN_vkCreateAccelerationStructureKHR           vkCreateAccelerationStructureKHR_;
-extern PFN_vkDestroyAccelerationStructureKHR          vkDestroyAccelerationStructureKHR_;
-extern PFN_vkGetAccelerationStructureBuildSizesKHR    vkGetAccelerationStructureBuildSizesKHR_;
-extern PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR_;
-extern PFN_vkCmdBuildAccelerationStructuresKHR        vkCmdBuildAccelerationStructuresKHR_;
-extern PFN_vkCreateRayTracingPipelinesKHR             vkCreateRayTracingPipelinesKHR_;
-extern PFN_vkGetRayTracingShaderGroupHandlesKHR       vkGetRayTracingShaderGroupHandlesKHR_;
-extern PFN_vkCmdTraceRaysKHR                          vkCmdTraceRaysKHR_;
+extern PFN_vkGetBufferDeviceAddressKHR                   vkGetBufferDeviceAddressKHR_;
+extern PFN_vkCreateAccelerationStructureKHR              vkCreateAccelerationStructureKHR_;
+extern PFN_vkDestroyAccelerationStructureKHR             vkDestroyAccelerationStructureKHR_;
+extern PFN_vkGetAccelerationStructureBuildSizesKHR       vkGetAccelerationStructureBuildSizesKHR_;
+extern PFN_vkGetAccelerationStructureDeviceAddressKHR    vkGetAccelerationStructureDeviceAddressKHR_;
+extern PFN_vkCmdBuildAccelerationStructuresKHR           vkCmdBuildAccelerationStructuresKHR_;
+extern PFN_vkCreateRayTracingPipelinesKHR                vkCreateRayTracingPipelinesKHR_;
+extern PFN_vkGetRayTracingShaderGroupHandlesKHR          vkGetRayTracingShaderGroupHandlesKHR_;
+extern PFN_vkCmdTraceRaysKHR                             vkCmdTraceRaysKHR_;
+extern PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR_;
+extern PFN_vkCmdCopyAccelerationStructureKHR             vkCmdCopyAccelerationStructureKHR_;
 
 
 #endif // VKCONTEXT_H

@@ -1,13 +1,14 @@
-#define VMA_IMPLEMENTATION
-
 #include "vkcontext.h"
 #include "vkerror.h"
 
 #include <GLFW/glfw3.h>
 
+#include <stdexcept>
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <cstring>
+#include <cstdio>
 
 
 // --------------------------------------------------- //
@@ -322,13 +323,19 @@ void VkContext::createDevice()
         .dynamicRendering = VK_TRUE
     };
 
+    VkPhysicalDeviceScalarBlockLayoutFeatures scalarBlockLayoutFeatures{
+        .sType             = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES,
+        .scalarBlockLayout = VK_TRUE
+    };
+
     features2.pNext                   = &syncFeatures;
     syncFeatures.pNext                = &atomicFloatFeatures;
     atomicFloatFeatures.pNext         = &bufferDeviceAddressFeatures;
     bufferDeviceAddressFeatures.pNext = &accelStructFeatures;
     accelStructFeatures.pNext         = &rayTracingPipelineFeatures;
     rayTracingPipelineFeatures.pNext  = &dynamicRenderingFeatures;
-    dynamicRenderingFeatures.pNext    = nullptr;
+    dynamicRenderingFeatures.pNext    = &scalarBlockLayoutFeatures;
+    scalarBlockLayoutFeatures.pNext   = nullptr;
 
     VkDeviceCreateInfo deviceCreateInfo{
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -349,15 +356,17 @@ void VkContext::createDevice()
     }
 
     // Load extension function pointers
-    vkGetBufferDeviceAddressKHR_                = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR"));
-    vkCreateAccelerationStructureKHR_           = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(device, "vkCreateAccelerationStructureKHR"));
-    vkDestroyAccelerationStructureKHR_          = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(vkGetDeviceProcAddr(device, "vkDestroyAccelerationStructureKHR"));
-    vkGetAccelerationStructureBuildSizesKHR_    = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR"));
-    vkGetAccelerationStructureDeviceAddressKHR_ = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(device, "vkGetAccelerationStructureDeviceAddressKHR"));
-    vkCmdBuildAccelerationStructuresKHR_        = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(device, "vkCmdBuildAccelerationStructuresKHR"));
-    vkCreateRayTracingPipelinesKHR_             = reinterpret_cast<PFN_vkCreateRayTracingPipelinesKHR>(vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR"));
-    vkGetRayTracingShaderGroupHandlesKHR_       = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR"));
-    vkCmdTraceRaysKHR_                          = reinterpret_cast<PFN_vkCmdTraceRaysKHR>(vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR"));
+    vkGetBufferDeviceAddressKHR_                   = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR"));
+    vkCreateAccelerationStructureKHR_              = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(device, "vkCreateAccelerationStructureKHR"));
+    vkDestroyAccelerationStructureKHR_             = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(vkGetDeviceProcAddr(device, "vkDestroyAccelerationStructureKHR"));
+    vkGetAccelerationStructureBuildSizesKHR_       = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR"));
+    vkGetAccelerationStructureDeviceAddressKHR_    = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(device, "vkGetAccelerationStructureDeviceAddressKHR"));
+    vkCmdBuildAccelerationStructuresKHR_           = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(device, "vkCmdBuildAccelerationStructuresKHR"));
+    vkCreateRayTracingPipelinesKHR_                = reinterpret_cast<PFN_vkCreateRayTracingPipelinesKHR>(vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR"));
+    vkGetRayTracingShaderGroupHandlesKHR_          = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR"));
+    vkCmdTraceRaysKHR_                             = reinterpret_cast<PFN_vkCmdTraceRaysKHR>(vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR"));
+    vkCmdWriteAccelerationStructuresPropertiesKHR_ = reinterpret_cast<PFN_vkCmdWriteAccelerationStructuresPropertiesKHR>(vkGetDeviceProcAddr(device, "vkCmdWriteAccelerationStructuresPropertiesKHR"));
+    vkCmdCopyAccelerationStructureKHR_             = reinterpret_cast<PFN_vkCmdCopyAccelerationStructureKHR>(vkGetDeviceProcAddr(device, "vkCmdCopyAccelerationStructureKHR"));
 
     // Get ray tracing properties
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProps{
@@ -411,6 +420,8 @@ void VkContext::cleanup()
         vmaDestroyAllocator(allocator);
         allocator = VK_NULL_HANDLE;
     }
+
+    vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
