@@ -72,7 +72,7 @@ static_assert(offsetof(RayHit, particleId) == 0, "RayHit::particleId offset must
 static_assert(offsetof(RayHit, distance)   == 4, "RayHit::distance offset must be 4");
 
 
-struct GaussianData
+struct GaussianParticleData
 {
     std::vector<GaussianParticle> particles;
 
