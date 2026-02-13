@@ -82,8 +82,8 @@ add_executable(${PROJECT_NAME}
 
     # 3DGRT
     src/3dgrt/data.h
-    src/3dgrt/gaussian-loader.h
-    src/3dgrt/gaussian-loader.cpp
+    src/3dgrt/loader.h
+    src/3dgrt/loader.cpp
     src/3dgrt/icosahedron.h
     src/3dgrt/gaussian-buffers.h
     src/3dgrt/gaussian-buffers.cpp

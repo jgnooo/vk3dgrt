@@ -1,4 +1,4 @@
-#include "gaussian-loader.h"
+#include "loader.h"
 
 #define TINYPLY_IMPLEMENTATION
 #include <tinyply.h>
@@ -18,13 +18,13 @@ namespace vk3dgrt {
 //  Helper functions
 // --------------------------------------------------- //
 
-float GaussianLoader::sigmoid(float x)
+float Loader::sigmoid(float x)
 {
     return 1.0f / (1.0f + std::exp(-x));
 }
 
 
-glm::vec4 GaussianLoader::normalizeQuaternion(float x, float y, float z, float w)
+glm::vec4 Loader::normalizeQuaternion(float x, float y, float z, float w)
 {
     float length = std::sqrt(w * w + x * x + y * y + z * z);
     if (length < 1e-8f)
@@ -42,7 +42,7 @@ glm::vec4 GaussianLoader::normalizeQuaternion(float x, float y, float z, float w
 //  GaussianLoader Implementation
 // --------------------------------------------------- //
 
-bool GaussianLoader::loadPLY(const std::filesystem::path& filePath, GaussianData& outData)
+bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianData& outData)
 {
     outData.clear();
     lastError.clear();
@@ -179,10 +179,11 @@ bool GaussianLoader::loadPLY(const std::filesystem::path& filePath, GaussianData
         {
             GaussianParticle& particle = outData.particles[i];
 
+            // Position: RDF (COLMAP) -> RUB conversion (negate Y, Z)
             particle.position = glm::vec3(
                 posData[i * 3 + 0],
-                posData[i * 3 + 1],
-                posData[i * 3 + 2]
+                -posData[i * 3 + 1],
+                -posData[i * 3 + 2]
             );
 
             if (scaleData)
@@ -198,14 +199,16 @@ bool GaussianLoader::loadPLY(const std::filesystem::path& filePath, GaussianData
                 particle.scale = glm::vec3(0.01f);
             }
 
+            // Rotation quaternion (normalize + RDF->RUB conversion)
+            // RDF->RUB: negate Y and Z components of quaternion
+            // This is equivalent to R' = F * R * F where F = diag(1, -1, -1)
             if (rotData)
             {
-                // PLY stores as rot_0, rot_1, rot_2, rot_3 which is typically W, X, Y, Z
                 particle.quaternion = normalizeQuaternion(
-                    rotData[i * 4 + 1],  // X
-                    rotData[i * 4 + 2],  // Y
-                    rotData[i * 4 + 3],  // Z
-                    rotData[i * 4 + 0]   // W
+                    rotData[i * 4 + 1],   // X (unchanged)
+                    -rotData[i * 4 + 2],  // -Y
+                    -rotData[i * 4 + 3],  // -Z
+                    rotData[i * 4 + 0]    // W (unchanged)
                 );
             }
             else
@@ -239,36 +242,49 @@ bool GaussianLoader::loadPLY(const std::filesystem::path& filePath, GaussianData
             }
 
             // Pack full SH coefficients (16 vec3 = 48 floats per particle)
+            // RDF->RUB: negate SH coefficients whose basis functions change sign
+            // under (y -> -y, z -> -z) transformation.
+            // Indices to negate: 1, 2, 4, 7, 9, 11, 12, 14
             if (hasFullSH && shRestChannels.size() == 45)
             {
                 outData.shDegree = 3;
                 outData.shCoeffsFull.resize(particleCount * 48);  // 16 coeffs × 3 channels
 
+                // SH coefficients that need sign flip for RDF->RUB
+                // l=1: sh[1](-y), sh[2](z)
+                // l=2: sh[4](xy), sh[7](xz)
+                // l=3: sh[9](y(3x²-y²)), sh[11](y(4z²-x²-y²)),
+                //       sh[12](z(2z²-3x²-3y²)), sh[14](z(x²-y²))
+                constexpr bool shFlip[16] = {
+                    false, true,  true,  false,   // 0-3
+                    true,  false, false, true,    // 4-7
+                    false, true,  false, true,    // 8-11
+                    true,  false, true,  false    // 12-15
+                };
+
                 for (size_t i = 0; i < particleCount; ++i)
                 {
                     size_t baseIdx = i * 48;
 
-                    // SH coefficient 0 (DC)
-                    outData.shCoeffsFull[baseIdx + 0] = shDCData[i * 3 + 0];  // R
-                    outData.shCoeffsFull[baseIdx + 1] = shDCData[i * 3 + 1];  // G
-                    outData.shCoeffsFull[baseIdx + 2] = shDCData[i * 3 + 2];  // B
+                    // SH coefficient 0 (DC) - no flip
+                    outData.shCoeffsFull[baseIdx + 0] = shDCData[i * 3 + 0];
+                    outData.shCoeffsFull[baseIdx + 1] = shDCData[i * 3 + 1];
+                    outData.shCoeffsFull[baseIdx + 2] = shDCData[i * 3 + 2];
 
                     // SH coefficients 1-15 (from f_rest)
-                    // f_rest layout: f_rest_0..f_rest_14 are for R, f_rest_15..f_rest_29 for G, f_rest_30..f_rest_44 for B
-                    // We need to interleave: [sh1_r, sh1_g, sh1_b, sh2_r, sh2_g, sh2_b, ...]
                     for (int shIdx = 1; shIdx < 16; ++shIdx)
                     {
-                        int restIdx = shIdx - 1;  // 0-14 for coeffs 1-15
+                        int restIdx = shIdx - 1;
                         const float* restR = reinterpret_cast<const float*>(shRestChannels[restIdx]->buffer.get());
                         const float* restG = reinterpret_cast<const float*>(shRestChannels[restIdx + 15]->buffer.get());
                         const float* restB = reinterpret_cast<const float*>(shRestChannels[restIdx + 30]->buffer.get());
 
-                        outData.shCoeffsFull[baseIdx + shIdx * 3 + 0] = restR[i];
-                        outData.shCoeffsFull[baseIdx + shIdx * 3 + 1] = restG[i];
-                        outData.shCoeffsFull[baseIdx + shIdx * 3 + 2] = restB[i];
+                        float sign = shFlip[shIdx] ? -1.0f : 1.0f;
+                        outData.shCoeffsFull[baseIdx + shIdx * 3 + 0] = restR[i] * sign;
+                        outData.shCoeffsFull[baseIdx + shIdx * 3 + 1] = restG[i] * sign;
+                        outData.shCoeffsFull[baseIdx + shIdx * 3 + 2] = restB[i] * sign;
                     }
                 }
-                std::cout << "[GaussianLoader] Loaded full SH coefficients (degree 3, 48 floats/particle)" << std::endl;
             }
             else
             {
@@ -283,7 +299,6 @@ bool GaussianLoader::loadPLY(const std::filesystem::path& filePath, GaussianData
                     outData.shCoeffsFull[baseIdx + 1] = shDCData[i * 3 + 1];
                     outData.shCoeffsFull[baseIdx + 2] = shDCData[i * 3 + 2];
                 }
-                std::cout << "[GaussianLoader] Loaded SH DC coefficients (degree 0)" << std::endl;
             }
         }
 

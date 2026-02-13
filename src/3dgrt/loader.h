@@ -1,5 +1,5 @@
-#ifndef GAUSSIAN_LOADER_H
-#define GAUSSIAN_LOADER_H
+#ifndef LOADER_H
+#define LOADER_H
 
 #include "data.h"
 
@@ -9,17 +9,17 @@
 
 namespace vk3dgrt {
 
-class GaussianLoader
+class Loader
 {
 public:
-    GaussianLoader()  = default;
-    ~GaussianLoader() = default;
+    Loader()  = default;
+    ~Loader() = default;
 
     // Disable copy, allow move
-    GaussianLoader(const GaussianLoader&)            = delete;
-    GaussianLoader& operator=(const GaussianLoader&) = delete;
-    GaussianLoader(GaussianLoader&&)                 = default;
-    GaussianLoader& operator=(GaussianLoader&&)      = default;
+    Loader(const Loader&)            = delete;
+    Loader& operator=(const Loader&) = delete;
+    Loader(Loader&&)                 = default;
+    Loader& operator=(Loader&&)      = default;
 
     /**
      * PLY properties:
@@ -47,4 +47,4 @@ private:
 
 }   // namespace vk3dgrt
 
-#endif // GAUSSIAN_LOADER_H
+#endif // LOADER_H
