@@ -95,10 +95,16 @@ struct RayTracingPipelineBuilder
                      uint32_t anyHitShaderIndex       = VK_SHADER_UNUSED_KHR,
                      uint32_t intersectionShaderIndex = VK_SHADER_UNUSED_KHR);
     
+    // Set specialization info applied to all shader stages
+    // Caller must ensure specInfo and its data are alive until build() returns
+    void setSpecializationInfo(const VkSpecializationInfo* specInfo);
+
     // Build the pipeline
     VkPipeline build(VkPipelineLayout layout, uint32_t maxRecursionDepth = 1);
 
 private:
+    const VkSpecializationInfo* specInfo_ = nullptr;
+
     uint32_t addShaderStage(VkShaderModule module, VkShaderStageFlagBits stage);
 };
 

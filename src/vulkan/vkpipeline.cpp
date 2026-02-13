@@ -157,6 +157,8 @@ void RayTracingPipelineBuilder::cleanup()
     shaderStages.clear();
     shaderModules.clear();
     shaderGroups.clear();
+
+    specInfo_ = nullptr;
 }
 
 
@@ -168,7 +170,8 @@ uint32_t RayTracingPipelineBuilder::addShaderStage(VkShaderModule module, VkShad
         .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .stage  = stage,
         .module = module,
-        .pName  = "main"
+        .pName  = "main",
+        .pSpecializationInfo = specInfo_
     };
 
     shaderStages.push_back(stageInfo);
@@ -233,6 +236,12 @@ void RayTracingPipelineBuilder::addHitGroup(uint32_t closestHitShaderIndex,
         .intersectionShader = intersectionShaderIndex
     };
     shaderGroups.push_back(group);
+}
+
+
+void RayTracingPipelineBuilder::setSpecializationInfo(const VkSpecializationInfo* specInfo)
+{
+    specInfo_ = specInfo;
 }
 
 
