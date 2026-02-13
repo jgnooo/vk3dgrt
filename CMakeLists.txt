@@ -81,10 +81,12 @@ add_executable(${PROJECT_NAME}
     src/vulkan/vkpipeline.cpp
 
     # 3DGRT
-    src/3dgrt/gaussian-data.h
+    src/3dgrt/data.h
     src/3dgrt/gaussian-loader.h
     src/3dgrt/gaussian-loader.cpp
     src/3dgrt/icosahedron.h
+    src/3dgrt/gaussian-buffers.h
+    src/3dgrt/gaussian-buffers.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

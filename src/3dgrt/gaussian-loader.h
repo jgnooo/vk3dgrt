@@ -1,7 +1,7 @@
 #ifndef GAUSSIAN_LOADER_H
 #define GAUSSIAN_LOADER_H
 
-#include "gaussian-data.h"
+#include "data.h"
 
 #include <filesystem>
 #include <string>

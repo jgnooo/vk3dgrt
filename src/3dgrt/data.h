@@ -1,5 +1,5 @@
-#ifndef GAUSSIAN_DATA_H
-#define GAUSSIAN_DATA_H
+#ifndef DATA_H
+#define DATA_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -19,11 +19,15 @@ namespace vk3dgrt {
 // General constants
 constexpr uint32_t INVALID_PARTICLE_ID    = 0xFFFFFFFF;
 constexpr float    INFINITE_DISTANCE      = 1e20f;
-constexpr uint32_t MAX_HITS_PER_TRACE     = 16;
+constexpr uint32_t MAX_HITS_PER_TRACE     = 18;
 constexpr uint32_t SH_COEFFS_PER_PARTICLE = 16;
 
+// SH degree 0 constant: C0 = 1 / (2 * sqrt(pi))
+// Used for pre-computing DC color: color = SH_C0 * shDC + 0.5
+constexpr float SH_C0 = 0.28209479177387814f;
+
 // Adaptive Clamping constants
-constexpr float    DEFAULT_MIN_ALPHA      = 0.01f;               // Minimum alpha threshold for kernel scale
+constexpr float    DEFAULT_MIN_ALPHA = 1.0f / 255.0f;
 
 // Generalized Gaussian kernel degree constants (matching shader)
 // Reference: 3DGRT Paper (SIGGRAPH Asia 2024), Section 4.2
@@ -165,20 +169,23 @@ inline float computeKernelScale(float opacity,
     // Clamp opacity to valid range [minAlpha, 1.0]
     const float clampedOpacity = std::max(opacity, minAlpha);
 
-    // Compute log term (same for all kernel degrees)
-    const float logTerm = 2.0f * std::logf(clampedOpacity / minAlpha);
+    // log(opacity / minAlpha) - base term for all kernel degrees
+    const float logRatio = std::logf(clampedOpacity / minAlpha);
 
     if (kernelDegree == GAUSSIAN_KERNEL_N1)
     {
-        // n=1 (Standard Gaussian): r = sqrt(2 * log(opacity / minAlpha))
-        // When opacity == 1.0, r ≈ 3.03
-        return std::sqrtf(logTerm);
+        // n=1 (degree=2, s=-0.5): exp(-0.5 * d²) = minAlpha/opacity
+        // d = sqrt(2 * log(opacity / minAlpha))
+        // When opacity == 1.0, minAlpha=1/255: r ≈ 3.33
+        return std::sqrtf(2.0f * logRatio);
     }
     else // GAUSSIAN_KERNEL_N2 or default
     {
-        // n=2 (Generalized Gaussian): r = (2 * log(opacity / minAlpha))^(1/4)
-        // When opacity == 1.0, r ≈ 1.74 (57% of n=1)
-        return std::powf(logTerm, 0.25f);
+        // n=2 (degree=4, s=-1/18): exp(-1/18 * d⁴) = minAlpha/opacity
+        // d⁴ = 18 * log(opacity / minAlpha)
+        // d  = (18 * log(opacity / minAlpha))^(1/4)
+        // When opacity == 1.0, minAlpha=1/255: r ≈ 3.16
+        return std::powf(18.0f * logRatio, 0.25f);
     }
 }
 
@@ -258,4 +265,4 @@ inline VkTransformMatrixKHR computeVkInstanceTransform(const GaussianParticle& p
 
 }   // namespace vk3dgrt
 
-#endif // GAUSSIAN_DATA_H
+#endif // DATA_H
