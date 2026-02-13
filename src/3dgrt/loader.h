@@ -30,7 +30,7 @@ public:
      * - f_dc_0, f_dc_1, f_dc_2: SH DC coefficients (optional)
      * - f_rest_*: SH higher order coefficients (optional)
      */
-    bool loadPLY(const std::filesystem::path& filePath, GaussianData& outData);
+    bool loadPLY(const std::filesystem::path& filePath, GaussianParticleData& outData);
 
     const std::string& getLastError() const
     {

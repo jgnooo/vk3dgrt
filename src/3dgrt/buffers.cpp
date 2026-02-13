@@ -8,7 +8,7 @@
 namespace vk3dgrt {
 
 bool GaussianParticleBuffers::initialize(VkContext* context,
-                                      const GaussianData& data,
+                                      const GaussianParticleData& data,
                                       VkQueue transferQueue,
                                       VkCommandPool transferCommandPool)
 {
@@ -105,7 +105,7 @@ void GaussianParticleBuffers::cleanup(VmaAllocator allocator)
 
 bool GaussianParticleBuffers::uploadParticleData(
     VkContext* context,
-    const GaussianData& data,
+    const GaussianParticleData& data,
     VkQueue transferQueue,
     VkCommandPool commandPool)
 {
@@ -178,7 +178,7 @@ bool GaussianParticleBuffers::uploadParticleData(
 
 
 bool GaussianParticleBuffers::uploadSHData(VkContext* context,
-                                           const GaussianData& data,
+                                           const GaussianParticleData& data,
                                            VkQueue transferQueue,
                                            VkCommandPool commandPool)
 {

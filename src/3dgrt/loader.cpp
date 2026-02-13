@@ -39,10 +39,10 @@ glm::vec4 Loader::normalizeQuaternion(float x, float y, float z, float w)
 
 
 // --------------------------------------------------- //
-//  GaussianLoader Implementation
+//  Loader Implementation
 // --------------------------------------------------- //
 
-bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianData& outData)
+bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData& outData)
 {
     outData.clear();
     lastError.clear();

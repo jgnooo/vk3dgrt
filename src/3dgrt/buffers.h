@@ -46,7 +46,7 @@ public:
     GaussianParticleBuffers& operator=(GaussianParticleBuffers&&)      = default;
 
     bool initialize(VkContext* context,
-                    const GaussianData& data,
+                    const GaussianParticleData& data,
                     VkQueue transferQueue,
                     VkCommandPool transferCommandPool);
 
@@ -94,12 +94,12 @@ public:
 
 private:
     bool uploadParticleData(VkContext* context,
-                            const GaussianData& data,
+                            const GaussianParticleData& data,
                             VkQueue transferQueue,
                             VkCommandPool commandPool);
 
     bool uploadSHData(VkContext* context,
-                      const GaussianData& data,
+                      const GaussianParticleData& data,
                       VkQueue transferQueue,
                       VkCommandPool commandPool);
 
