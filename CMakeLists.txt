@@ -89,6 +89,8 @@ add_executable(${PROJECT_NAME}
     src/3dgrt/buffers.cpp
     src/3dgrt/blas.h
     src/3dgrt/blas.cpp
+    src/3dgrt/tlas.h
+    src/3dgrt/tlas.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
