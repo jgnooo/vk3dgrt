@@ -1,0 +1,40 @@
+#version 460
+#extension GL_EXT_ray_tracing             : require
+#extension GL_EXT_control_flow_attributes : require
+
+#include "utils/common.glsl"
+
+layout(location = 0) rayPayloadInEXT HitArrayPayload payload;
+
+
+void main()
+{
+    uint  splatId   = gl_InstanceCustomIndexEXT;
+    float splatDist = gl_HitTEXT;
+
+    // Early-out: skip sort if hit is farther than all stored hits.
+    // "Accepting" (not calling ignoreIntersectionEXT) contracts tMax,
+    // preventing future any-hit calls for even farther geometry.
+    if (splatDist < payload.dist[MAX_HITS_PER_TRACE - 1])
+    {
+        [[unroll]]
+        for (int i = 0; i < MAX_HITS_PER_TRACE; ++i)
+        {
+            if (splatDist < payload.dist[i])
+            {
+                float tmpDist    = payload.dist[i];
+                payload.dist[i]  = splatDist;
+                splatDist        = tmpDist;
+
+                uint tmpId       = payload.id[i];
+                payload.id[i]    = splatId;
+                splatId          = tmpId;
+            }
+        }
+
+        if (payload.dist[MAX_HITS_PER_TRACE - 1] > gl_HitTEXT)
+        {
+            ignoreIntersectionEXT;
+        }
+    }
+}

@@ -137,6 +137,12 @@ file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 
 # List of shader files to compile
 # 3DGRT shaders
+set(SHADER_SOURCES
+    ${SHADER_SOURCE_DIR}/ray-generation.rgen
+    ${SHADER_SOURCE_DIR}/any-hit.rahit
+    ${SHADER_SOURCE_DIR}/closest-hit.rchit
+    ${SHADER_SOURCE_DIR}/miss.rmiss
+)
 
 # Include files (not compiled directly, but tracked for dependencies)
 set(SHADER_INCLUDES
