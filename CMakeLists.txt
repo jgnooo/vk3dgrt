@@ -111,3 +111,83 @@ target_link_libraries(${PROJECT_NAME}
         glm
         tinyply
 )
+
+# --------------------------------------------------------------------------- #
+# Shader Compilation (GLSL -> SPIR-V)
+#
+# Compile-time specialization via -D flags (matching nvpro Slang macros):
+#   RENDER_MODE          - 0=GS (default), 1=POINT, 2=SPLAT
+#   COMPILE_KERNEL_DEGREE - 1=standard, 2=generalized (default)
+#
+# SH is always enabled (SH_ENABLED=1, MAX_SH_DEGREE=3 hardcoded in shader).
+# The default compilation produces a GS-mode shader with SH enabled and
+# generalized Gaussian kernel (n=2). Different configurations can be
+# compiled by changing these CMake variables or adding shader variants.
+# --------------------------------------------------------------------------- #
+find_program(GLSLC_EXECUTABLE glslc HINTS "$ENV{VULKAN_SDK}/Bin")
+if (NOT GLSLC_EXECUTABLE)
+    message(FATAL_ERROR "glslc not found. Please install the Vulkan SDK.")
+endif()
+
+set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+
+# Create output directory
+file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
+
+# List of shader files to compile
+# 3DGRT shaders
+
+# Include files (not compiled directly, but tracked for dependencies)
+set(SHADER_INCLUDES
+    ${SHADER_SOURCE_DIR}/utils/common.glsl
+    ${SHADER_SOURCE_DIR}/utils/math.glsl
+    ${SHADER_SOURCE_DIR}/utils/eval.glsl
+    ${SHADER_SOURCE_DIR}/utils/spherical-harmonics.glsl
+)
+
+# Create gaussian shader output directory
+file(MAKE_DIRECTORY ${SHADER_BINARY_DIR}/3dgrt)
+
+# Compile each shader with compile-time defines
+set(SHADER_BINARIES "")
+foreach(SHADER_SOURCE ${SHADER_SOURCES})
+    # Get relative path from shader source directory
+    file(RELATIVE_PATH SHADER_REL_PATH ${SHADER_SOURCE_DIR} ${SHADER_SOURCE})
+    get_filename_component(SHADER_REL_DIR ${SHADER_REL_PATH} DIRECTORY)
+    get_filename_component(SHADER_NAME ${SHADER_SOURCE} NAME)
+
+    # Set output path preserving directory structure
+    if(SHADER_REL_DIR)
+        set(SHADER_OUTPUT ${SHADER_BINARY_DIR}/${SHADER_REL_DIR}/${SHADER_NAME}.spv)
+    else()
+        set(SHADER_OUTPUT ${SHADER_BINARY_DIR}/${SHADER_NAME}.spv)
+    endif()
+
+    add_custom_command(
+        OUTPUT ${SHADER_OUTPUT}
+        COMMAND ${GLSLC_EXECUTABLE}
+            --target-env=vulkan1.3
+            -O
+            -I${SHADER_SOURCE_DIR}
+            -I${SHADER_SOURCE_DIR}/include
+            -o ${SHADER_OUTPUT}
+            ${SHADER_SOURCE}
+        DEPENDS ${SHADER_SOURCE} ${SHADER_INCLUDES}
+        COMMENT "Compiling shader: ${SHADER_REL_PATH}"
+        VERBATIM
+    )
+
+    list(APPEND SHADER_BINARIES ${SHADER_OUTPUT})
+endforeach()
+
+# Create custom target for shaders
+add_custom_target(shaders ALL DEPENDS ${SHADER_BINARIES})
+
+# Make main target depend on shaders
+add_dependencies(${PROJECT_NAME} shaders)
+
+# Define shader directory path for C++ code
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    SHADER_DIR="${SHADER_BINARY_DIR}"
+)
