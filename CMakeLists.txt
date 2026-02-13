@@ -91,6 +91,8 @@ add_executable(${PROJECT_NAME}
     src/3dgrt/blas.cpp
     src/3dgrt/tlas.h
     src/3dgrt/tlas.cpp
+    src/3dgrt/rt-descriptor-set.h
+    src/3dgrt/rt-descriptor-set.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
