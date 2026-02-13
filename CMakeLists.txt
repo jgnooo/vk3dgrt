@@ -87,6 +87,8 @@ add_executable(${PROJECT_NAME}
     src/3dgrt/icosahedron.h
     src/3dgrt/buffers.h
     src/3dgrt/buffers.cpp
+    src/3dgrt/blas.h
+    src/3dgrt/blas.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
