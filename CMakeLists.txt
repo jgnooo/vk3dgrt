@@ -85,8 +85,8 @@ add_executable(${PROJECT_NAME}
     src/3dgrt/loader.h
     src/3dgrt/loader.cpp
     src/3dgrt/icosahedron.h
-    src/3dgrt/gaussian-buffers.h
-    src/3dgrt/gaussian-buffers.cpp
+    src/3dgrt/buffers.h
+    src/3dgrt/buffers.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
