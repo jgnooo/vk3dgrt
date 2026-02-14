@@ -65,6 +65,7 @@ target_include_directories(tinyply INTERFACE ${TINYPLY_DIR}/source)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/scene.h
     
     # Vulkan
     src/vulkan/vkerror.h
