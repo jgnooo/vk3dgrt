@@ -170,7 +170,7 @@ void VkEngine::createGLFWWindow()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window = glfwCreateWindow(1280, 720, "Vulkan Window", nullptr, nullptr);
+    window = glfwCreateWindow(1280, 720, "VK3DGRT", nullptr, nullptr);
 
     if (!window)
         throw std::runtime_error("[VkEngine] Failed to create GLFW window.");
