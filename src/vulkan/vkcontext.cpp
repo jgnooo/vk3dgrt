@@ -115,21 +115,8 @@ void VkContext::createInstance()
         .apiVersion       = VK_API_VERSION_1_3
     };
 
-    VkValidationFeatureEnableEXT enables[] = {
-        VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT
-    };
-
-    VkValidationFeaturesEXT features = {
-        .sType                         = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
-        .enabledValidationFeatureCount = 1,
-        .pEnabledValidationFeatures    = enables,
-    };
-
     VkInstanceCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-#ifndef NDEBUG
-        .pNext = layers.empty() ? nullptr : &features,
-#endif
         .pApplicationInfo        = &appInfo,
         .enabledLayerCount       = static_cast<uint32_t>(layers.size()),
         .ppEnabledLayerNames     = layers.data(),
