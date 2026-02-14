@@ -1,0 +1,381 @@
+#include "grt-scene.h"
+
+#include "vulkan/vkprovider.h"
+#include "vulkan/vkerror.h"
+
+#include <GLFW/glfw3.h>
+
+#include <iostream>
+#include <algorithm>
+
+
+namespace vk3dgrt {
+
+bool GRTScene::initialize(VkProvider* provider)
+{
+    if (initialized)
+    {
+        std::cerr << "[GRTScene] Already initialized" << std::endl;
+        return false;
+    }
+
+    provider_ = provider;
+    return true;
+}
+
+
+void GRTScene::cleanup()
+{
+    if (!initialized && !provider_)
+    {
+        return;
+    }
+
+    if (provider_)
+    {
+        VkContext* context = &provider_->getContext();
+
+        // Wait for device to be idle
+        vkDeviceWaitIdle(context->getDevice());
+
+        // Shutdown camera controller
+        cameraController.shutdown();
+
+        // Cleanup renderer
+        renderer.cleanup(context);
+
+        // Cleanup acceleration structures
+        tlas.cleanup(context);
+        blas.cleanup(context);
+
+        // Cleanup GPU buffers
+        gaussianParticleBuffers.cleanup(context->getAllocator());
+    }
+
+    // Clear CPU data
+    gaussianParticleData.clear();
+
+    initialized = false;
+    dataLoaded  = false;
+    provider_   = nullptr;
+}
+
+
+void GRTScene::recordCommands(VkCommandBuffer cmdBuffer)
+{
+    if (!initialized || !dataLoaded)
+    {
+        return;
+    }
+
+    renderer.recordRayTrace(cmdBuffer);
+}
+
+
+void GRTScene::copyToSwapchain(VkCommandBuffer cmdBuffer,
+                               VkImage dstImage,
+                               VkExtent2D dstExtent)
+{
+    if (!initialized || !dataLoaded)
+    {
+        return;
+    }
+
+    renderer.copyToSwapchain(cmdBuffer, dstImage, dstExtent);
+}
+
+
+void GRTScene::update(float deltaTime)
+{
+    if (!initialized)
+    {
+        return;
+    }
+
+    cameraController.update(deltaTime);
+
+    // Update camera UBO
+    CameraUBO cameraUBO = buildCameraUBO();
+    renderer.updateCamera(cameraUBO);
+}
+
+
+void GRTScene::onResize(uint32_t width, uint32_t height)
+{
+    if (!initialized)
+    {
+        return;
+    }
+
+    if (width == 0 || height == 0)
+    {
+        return;
+    }
+
+    // Update camera aspect ratio
+    camera.setAspect(width, height);
+
+    // Resize renderer output
+    renderer.resize(width, height);
+}
+
+
+bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* window)
+{
+    if (!provider_)
+    {
+        std::cerr << "[GRTScene] Provider not set. Call initialize() first." << std::endl;
+        return false;
+    }
+
+    VkContext* context = &provider_->getContext();
+
+    // 1. Load Gaussian data from PLY
+    Loader loader;
+    if (!loader.loadPLY(plyPath, gaussianParticleData))
+    {
+        std::cerr << "[GRTScene] Failed to load PLY: " << loader.getLastError() << std::endl;
+        // Continue without data - renderer can still be initialized
+    }
+    else
+    {
+        std::cout << "[GRTScene]   Loaded " << gaussianParticleData.getParticleCount() << " particles" << std::endl;
+
+        dataLoaded = true;
+
+        // Compute scene bounds
+        computeSceneBounds();
+        std::cout << "[GRTScene]   Scene bounds: ("
+                  << minBound.x << ", " << minBound.y << ", " << minBound.z << ") to ("
+                  << maxBound.x << ", " << maxBound.y << ", " << maxBound.z << ")" << std::endl;
+    }
+
+    // 2. Initialize GPU buffers
+    if (dataLoaded)
+    {
+        VkQueue transferQueue         = context->queues[QueueType::TRANSFER];
+        VkCommandPool transferCmdPool = provider_->getCommandPool(QueueType::TRANSFER);
+
+        if (!gaussianParticleBuffers.initialize(context, gaussianParticleData, transferQueue, transferCmdPool))
+        {
+            std::cerr << "[GRTScene] Failed to initialize GPU buffers" << std::endl;
+            return false;
+        }
+    }
+
+    // 3. Build Icosahedron BLAS
+    if (dataLoaded)
+    {
+        if (!blas.buildAndSubmit(provider_, gaussianParticleBuffers))
+        {
+            std::cerr << "[GRTScene] Failed to build BLAS" << std::endl;
+            return false;
+        }
+    }
+
+    // 4. Build TLAS
+    if (dataLoaded)
+    {
+        if (!tlas.buildAndSubmit(provider_, gaussianParticleData, blas.getDeviceAddress()))
+        {
+            std::cerr << "[GRTScene] Failed to build TLAS" << std::endl;
+            return false;
+        }
+    }
+
+    // 5. Initialize renderer
+    VkSwapchain& swapchain = provider_->getSwapchain();
+
+    // Build shader path from compile-time definition
+    std::string shaderPath = std::string(SHADER_DIR) + "/";
+
+    if (!renderer.initialize(context, swapchain.extent.width, swapchain.extent.height, shaderPath))
+    {
+        std::cerr << "[GRTScene] Failed to initialize renderer" << std::endl;
+        return false;
+    }
+
+    // 6. Update descriptors with scene data
+    if (dataLoaded)
+    {
+        if (!renderer.updateDescriptors(tlas, gaussianParticleBuffers))
+        {
+            std::cerr << "[GRTScene] Failed to update descriptors" << std::endl;
+            return false;
+        }
+
+        // Update scene bounds UBO
+        SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+        renderer.updateSceneBounds(boundsUBO);
+    }
+
+    // 7. Initialize camera system
+    camera.setAspect(swapchain.extent.width, swapchain.extent.height);
+
+    if (dataLoaded)
+    {
+        // Compute mean center of all positions (like nvpro's getCenter)
+        glm::vec3 meanCenter(0.0f);
+        for (const auto& particle : gaussianParticleData.particles)
+        {
+            meanCenter += particle.position;
+        }
+        meanCenter /= static_cast<float>(gaussianParticleData.particles.size());
+
+        // Fixed camera position like nvpro: eye=(0, 0, 2), center=mean, up=(0, 1, 0)
+        camera.position = glm::vec3(0.0f, 0.0f, 2.0f);
+        camera.target   = meanCenter;
+        camera.up       = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        // Initialize controller (syncs orbit params from camera state)
+        cameraController.initialize(window, &camera);
+    }
+    else
+    {
+        cameraController.initialize(window, &camera);
+        cameraController.resetToDefault();
+    }
+
+    // Update initial camera UBO
+    CameraUBO cameraUBO = buildCameraUBO();
+    renderer.updateCamera(cameraUBO);
+
+    initialized = true;
+
+    return true;
+}
+
+
+bool GRTScene::initializeEmpty(GLFWwindow* window)
+{
+    if (!provider_)
+    {
+        std::cerr << "[GRTScene] Provider not set. Call initialize() first." << std::endl;
+        return false;
+    }
+
+    VkContext* context = &provider_->getContext();
+
+    // Initialize renderer
+    VkSwapchain& swapchain = provider_->getSwapchain();
+    std::string shaderPath = std::string(SHADER_DIR) + "/";
+
+    if (!renderer.initialize(context, swapchain.extent.width, swapchain.extent.height, shaderPath))
+    {
+        std::cerr << "[GRTScene] Failed to initialize renderer" << std::endl;
+        return false;
+    }
+
+    // Initialize camera
+    camera.setAspect(swapchain.extent.width, swapchain.extent.height);
+    cameraController.initialize(window, &camera);
+    cameraController.resetToDefault();
+
+    CameraUBO cameraUBO = buildCameraUBO();
+    renderer.updateCamera(cameraUBO);
+
+    initialized = true;
+    dataLoaded  = false;
+
+    return true;
+}
+
+
+void GRTScene::setRenderMode(uint32_t mode)
+{
+    if (renderMode_ != mode)
+    {
+        renderMode_ = mode;
+
+        // Update scene bounds UBO with new render mode
+        if (initialized)
+        {
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+    }
+}
+
+
+void GRTScene::setSHDegree(uint32_t degree)
+{
+    if (shDegree_ != degree)
+    {
+        shDegree_ = degree;
+
+        // Update scene bounds UBO with new SH degree
+        if (initialized)
+        {
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+    }
+}
+
+
+void GRTScene::computeSceneBounds()
+{
+    if (gaussianParticleData.particles.empty())
+    {
+        minBound = glm::vec3(-1.0f);
+        maxBound = glm::vec3(1.0f);
+        return;
+    }
+
+    minBound = glm::vec3(std::numeric_limits<float>::max());
+    maxBound = glm::vec3(std::numeric_limits<float>::lowest());
+
+    for (const auto& particle : gaussianParticleData.particles)
+    {
+        // Account for scale when computing bounds
+        float maxScale = std::max({particle.scale.x, particle.scale.y, particle.scale.z});
+        float kernelScale = computeKernelScale(particle.opacity);
+        float particleRadius = maxScale * kernelScale * 3.0f;  // 3-sigma bound
+
+        minBound = glm::min(minBound, particle.position - glm::vec3(particleRadius));
+        maxBound = glm::max(maxBound, particle.position + glm::vec3(particleRadius));
+    }
+
+    // Add small padding
+    glm::vec3 padding = (maxBound - minBound) * 0.1f;
+    minBound -= padding;
+    maxBound += padding;
+}
+
+
+CameraUBO GRTScene::buildCameraUBO() const
+{
+    CameraUBO ubo{};
+
+    ubo.viewInverse  = camera.getInverseViewMatrix();
+    ubo.projInverse  = camera.getInverseProjectionMatrix();
+    ubo.position     = camera.position;
+    ubo.fov          = camera.fovY;
+    ubo.forward      = camera.getForward();
+    ubo.aspectRatio  = camera.aspect;
+    ubo.right        = camera.getRight();
+    ubo.nearPlane    = camera.zNear;
+    ubo.up           = camera.getUp();
+    ubo.farPlane     = camera.zFar;
+
+    return ubo;
+}
+
+
+SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
+{
+    SceneBoundsUBO ubo{};
+
+    ubo.minBound     = minBound;
+    ubo.tMin         = 0.001f;
+    ubo.maxBound     = maxBound;
+    ubo.tMax         = glm::length(maxBound - minBound) * 2.0f;
+    ubo.hasSH        = gaussianParticleBuffers.hasSHCoefficients() ? 1 : 0;
+    ubo.renderMode   = renderMode_;
+    ubo.shDegree     = shDegree_;
+    ubo.kernelDegree = kernelDegree_;
+
+    return ubo;
+}
+
+}   // namespace vk3dgrt

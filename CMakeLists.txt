@@ -66,6 +66,8 @@ target_include_directories(tinyply INTERFACE ${TINYPLY_DIR}/source)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/scene.h
+    src/scene-manager.h
+    src/scene-manager.cpp
     
     # Vulkan
     src/vulkan/vkerror.h
@@ -96,6 +98,12 @@ add_executable(${PROJECT_NAME}
     src/3dgrt/rt-descriptor-set.cpp
     src/3dgrt/renderer.h
     src/3dgrt/renderer.cpp
+    src/3dgrt/grt-scene.h
+    src/3dgrt/grt-scene.cpp
+
+    # GUI
+    src/gui/camera.h
+    src/gui/camera.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
