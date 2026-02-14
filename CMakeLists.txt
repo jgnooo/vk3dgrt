@@ -65,51 +65,21 @@ add_library(tinyply INTERFACE)
 target_include_directories(tinyply INTERFACE ${TINYPLY_DIR}/source)
 # --------------------------------------------------------------------------- #
 
+file(GLOB PROJECT_VULKAN_SOURCES CONFIGURE_DEPENDS src/vulkan/*.h src/vulkan/*.cpp)
+file(GLOB PROJECT_3DGRT_SOURCES CONFIGURE_DEPENDS src/3dgrt/*.h src/3dgrt/*.cpp)
+file(GLOB PROJECT_GUI_SOURCES CONFIGURE_DEPENDS src/gui/*.h src/gui/*.cpp)
+
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/scene.h
     src/scene-manager.h
     src/scene-manager.cpp
+    src/log.h
     
-    # Vulkan
-    src/vulkan/vkerror.h
-    src/vulkan/vkcontext.h
-    src/vulkan/vkcontext.cpp
-    src/vulkan/vkprovider.h
-    src/vulkan/vkbuffer.h
-    src/vulkan/vkbuffer.cpp
-    src/vulkan/vkimage.h
-    src/vulkan/vkimage.cpp
-    src/vulkan/vkaccelstruct.h
-    src/vulkan/vkaccelstruct.cpp
-    src/vulkan/vkpipeline.h
-    src/vulkan/vkpipeline.cpp
-    src/vulkan/vkengine.h
-    src/vulkan/vkengine.cpp
-
-    # 3DGRT
-    src/3dgrt/data.h
-    src/3dgrt/loader.h
-    src/3dgrt/loader.cpp
-    src/3dgrt/icosahedron.h
-    src/3dgrt/buffers.h
-    src/3dgrt/buffers.cpp
-    src/3dgrt/blas.h
-    src/3dgrt/blas.cpp
-    src/3dgrt/tlas.h
-    src/3dgrt/tlas.cpp
-    src/3dgrt/rt-descriptor-set.h
-    src/3dgrt/rt-descriptor-set.cpp
-    src/3dgrt/renderer.h
-    src/3dgrt/renderer.cpp
-    src/3dgrt/grt-scene.h
-    src/3dgrt/grt-scene.cpp
-
-    # GUI
-    src/gui/gui.h
-    src/gui/gui.cpp
-    src/gui/camera.h
-    src/gui/camera.cpp
+    ${PROJECT_ROOT_SOURCES}
+    ${PROJECT_VULKAN_SOURCES}
+    ${PROJECT_3DGRT_SOURCES}
+    ${PROJECT_GUI_SOURCES}
 )
 
 target_include_directories(${PROJECT_NAME}
