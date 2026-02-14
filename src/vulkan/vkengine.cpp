@@ -322,6 +322,7 @@ void VkEngine::draw()
 
     // Update GUI state from scene
     auto* gs = sceneManager.getGRTScene();
+    imguiManager.setScene(gs);
     if (gs)
     {
         imguiManager.setSHAvailable(gs->hasSHData());

@@ -1,6 +1,7 @@
 #include "gui.h"
 #include "vulkan/vkengine.h"
 #include "vulkan/vkerror.h"
+#include "3dgrt/grt-scene.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -189,72 +190,167 @@ void ImGuiManager::showRightPanel()
         ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoResize;
 
-    if (ImGui::Begin("vk3dgrt", &showRightPanel_, windowFlags))
+    if (ImGui::Begin("vk3dgrt", nullptr, windowFlags))
     {
-        // Render Mode Section
-        ImGui::Text("Render Mode");
-        ImGui::Separator();
+        // ── Assets Section ──
+        if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // Mesh Models
+            if (ImGui::TreeNode("Mesh Models"))
+            {
+                ImGui::Button("teapot.obj", ImVec2(-1.0f, 0.0f));
+                ImGui::TreePop();
+            }
+        }
+
         ImGui::Spacing();
 
-        // Radio buttons in a single row (centered)
-        int mode = static_cast<int>(renderMode_);
-
-        // Calculate total width of radio buttons
-        float radioWidth1 = ImGui::CalcTextSize("GS").x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
-        float radioWidth2 = ImGui::CalcTextSize("Point").x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
-        float radioWidth3 = ImGui::CalcTextSize("Splat").x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
-        float spacing     = 20.0f * 2.0f;  // Custom spacing between buttons
-        float totalWidth  = radioWidth1 + radioWidth2 + radioWidth3 + spacing;
-
-        // Center the radio buttons
-        float availWidth = ImGui::GetContentRegionAvail().x;
-        float offsetX    = (availWidth - totalWidth) * 0.5f;
-        if (offsetX > 0.0f)
+        // ── Renderer Section ──
+        if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
-        }
+            // Camera
+            ImGui::Text("Camera");
+            ImGui::Spacing();
 
-        if (ImGui::RadioButton("GS", &mode, GUI_RENDER_MODE_GS))
-        {
-            renderModeChanged_ = true;
-        }
-        ImGui::SameLine(0.0f, 20.0f);
-        if (ImGui::RadioButton("Point", &mode, GUI_RENDER_MODE_POINT))
-        {
-            renderModeChanged_ = true;
-        }
-        ImGui::SameLine(0.0f, 20.0f);
-        if (ImGui::RadioButton("Splat", &mode, GUI_RENDER_MODE_SPLAT))
-        {
-            renderModeChanged_ = true;
-        }
+            int camType = static_cast<int>(cameraType_);
 
-        renderMode_ = static_cast<uint32_t>(mode);
+            {
+                const char* labels[]  = {"Pinhole", "Fisheye"};
+                const int   values[]  = {GUI_CAMERA_PINHOLE, GUI_CAMERA_FISHEYE};
+                constexpr int kCount  = 2;
 
-        // SH Degree Section
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Text("SH Degree");
-        ImGui::Separator();
-        ImGui::Spacing();
+                float radioHeight  = ImGui::GetFrameHeight();
+                float innerPadding = ImGui::GetStyle().ItemInnerSpacing.x;
 
-        if (!shAvailable_)
-        {
-            ImGui::BeginDisabled();
-        }
+                float totalRadioWidth = 0.0f;
+                for (int i = 0; i < kCount; ++i)
+                {
+                    totalRadioWidth += radioHeight + innerPadding + ImGui::CalcTextSize(labels[i]).x;
+                }
 
-        int degree = shDegree_;
-        ImGui::SetNextItemWidth(-1.0f);
-        if (ImGui::SliderInt("##SHDegree", &degree, 0, 3))
-        {
-            shDegreeChanged_ = true;
-        }
-        shDegree_ = degree;
+                float availWidth  = ImGui::GetContentRegionAvail().x;
+                float usableWidth = availWidth * 0.92f;
+                float gapBetween  = usableWidth - totalRadioWidth;
+                float offsetX     = (availWidth - usableWidth) * 0.5f;
 
-        if (!shAvailable_)
-        {
-            ImGui::EndDisabled();
-            ImGui::TextDisabled("No SH data in scene");
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+
+                for (int i = 0; i < kCount; ++i)
+                {
+                    if (i > 0)
+                    {
+                        ImGui::SameLine(0.0f, gapBetween);
+                    }
+                    if (ImGui::RadioButton(labels[i], &camType, values[i]))
+                    {
+                        cameraTypeChanged_ = true;
+                    }
+                }
+            }
+
+            cameraType_ = static_cast<uint32_t>(camType);
+
+            // Render Mode
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Text("Render Mode");
+            ImGui::Spacing();
+
+            int mode = static_cast<int>(renderMode_);
+
+            {
+                const char* labels[]   = {"GS", "Point", "Splat"};
+                const int   values[]   = {GUI_RENDER_MODE_GS, GUI_RENDER_MODE_POINT, GUI_RENDER_MODE_SPLAT};
+                constexpr int kCount   = 3;
+
+                float radioHeight  = ImGui::GetFrameHeight();
+                float innerPadding = ImGui::GetStyle().ItemInnerSpacing.x;
+
+                float totalRadioWidth = 0.0f;
+                for (int i = 0; i < kCount; ++i)
+                {
+                    totalRadioWidth += radioHeight + innerPadding + ImGui::CalcTextSize(labels[i]).x;
+                }
+
+                float availWidth  = ImGui::GetContentRegionAvail().x;
+                float usableWidth = availWidth * 0.92f;
+                float totalGap    = usableWidth - totalRadioWidth;
+                float gapBetween  = totalGap / static_cast<float>(kCount - 1);
+                float offsetX     = (availWidth - usableWidth) * 0.5f;
+
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+
+                for (int i = 0; i < kCount; ++i)
+                {
+                    if (i > 0)
+                    {
+                        ImGui::SameLine(0.0f, gapBetween);
+                    }
+                    if (ImGui::RadioButton(labels[i], &mode, values[i]))
+                    {
+                        renderModeChanged_ = true;
+                    }
+                }
+            }
+
+            renderMode_ = static_cast<uint32_t>(mode);
+
+            // SH Degree - segmented button style
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Text("SH Degree");
+            ImGui::Spacing();
+
+            if (!shAvailable_)
+            {
+                ImGui::BeginDisabled();
+            }
+
+            {
+                int degree          = shDegree_;
+                float availWidth    = ImGui::GetContentRegionAvail().x;
+                float buttonSpacing = ImGui::GetStyle().ItemSpacing.x;
+                float buttonWidth   = (availWidth - buttonSpacing * 3.0f) / 4.0f;
+
+                for (int i = 0; i <= 3; ++i)
+                {
+                    if (i > 0)
+                    {
+                        ImGui::SameLine(0.0f, buttonSpacing);
+                    }
+
+                    bool isSelected = (degree == i);
+
+                    if (isSelected)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+                    }
+
+                    char label[8];
+                    snprintf(label, sizeof(label), "%d", i);
+
+                    if (ImGui::Button(label, ImVec2(buttonWidth, 0.0f)))
+                    {
+                        degree           = i;
+                        shDegreeChanged_ = true;
+                    }
+
+                    if (isSelected)
+                    {
+                        ImGui::PopStyleColor();
+                    }
+                }
+
+                shDegree_ = degree;
+            }
+
+            if (!shAvailable_)
+            {
+                ImGui::EndDisabled();
+                ImGui::TextDisabled("No SH data in scene");
+            }
         }
     }
     ImGui::End();

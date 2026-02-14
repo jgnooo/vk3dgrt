@@ -10,22 +10,32 @@ struct GLFWwindow;
 struct VkContext;
 struct VkSwapchain;
 
+namespace vk3dgrt { class GRTScene; }
+
 
 constexpr uint32_t GUI_RENDER_MODE_GS    = 0;  // Gaussian Splatting
 constexpr uint32_t GUI_RENDER_MODE_POINT = 1;  // Point visualization
 constexpr uint32_t GUI_RENDER_MODE_SPLAT = 2;  // Splat visualization
 
+constexpr uint32_t GUI_CAMERA_PINHOLE = 0;
+constexpr uint32_t GUI_CAMERA_FISHEYE = 1;
+
 
 class ImGuiManager
 {
-    VkContext*   context_   = nullptr;
-    VkSwapchain* swapchain_ = nullptr;
+    VkContext*          context_   = nullptr;
+    VkSwapchain*        swapchain_ = nullptr;
+    vk3dgrt::GRTScene*  scene_     = nullptr;
 
     bool initialized_    = false;
     bool showFpsOverlay_ = true;
     bool showRightPanel_ = true;
 
     float rightPanelWidth_ = 300.0f;
+
+    // Camera type
+    uint32_t cameraType_        = GUI_CAMERA_PINHOLE;
+    bool     cameraTypeChanged_ = false;
 
     // Render mode
     uint32_t renderMode_        = GUI_RENDER_MODE_GS;
@@ -51,6 +61,9 @@ public:
     void showFpsOverlay();
     void showRightPanel();
 
+    // Scene access (for Assets panel)
+    void setScene(vk3dgrt::GRTScene* scene) { scene_ = scene; }
+
     // Settings
     void setShowFpsOverlay(bool show) { showFpsOverlay_ = show; }
     bool isShowFpsOverlay() const { return showFpsOverlay_; }
@@ -60,6 +73,12 @@ public:
 
     void setRightPanelWidth(float width) { rightPanelWidth_ = width; }
     float getRightPanelWidth() const { return rightPanelWidth_; }
+
+    // Camera type
+    void setCameraType(uint32_t type) { cameraType_ = type; }
+    uint32_t getCameraType() const { return cameraType_; }
+    bool isCameraTypeChanged() const { return cameraTypeChanged_; }
+    void clearCameraTypeChanged() { cameraTypeChanged_ = false; }
 
     // Render mode
     void setRenderMode(uint32_t mode) { renderMode_ = mode; }
