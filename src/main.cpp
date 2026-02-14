@@ -1,27 +1,44 @@
-#include "vulkan/vkcontext.h"
+#include "vulkan/vkengine.h"
+#include "3dgrt/grt-scene.h"
 
-#include <GLFW/glfw3.h>
-
+#include <filesystem>
 #include <iostream>
-#include <stdexcept>
 
 
-int main()
+constexpr const char* DEFAULT_PLY_PATH = DATA_DIR "/cactus.ply";
+
+
+int main(int argc, char* argv[])
 {
-    if (!glfwInit())
-        throw std::runtime_error("[VkEngine] Failed to initialize GLFW.");
+    VkEngine engine;
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    std::filesystem::path plyPath;
+    if (argc > 1)
+    {
+        plyPath = argv[1];
+    }
+    else
+    {
+        plyPath = DEFAULT_PLY_PATH;
+    }
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Vulkan Window", nullptr, nullptr);
+    if (std::filesystem::exists(plyPath))
+    {
+        if (engine.getSceneManager().loadGRTScene(plyPath))
+        {
+        }
+        else
+        {
+            std::cerr << "[Main] Failed to load scene, continuing without GRT rendering" << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "[Main] PLY file not found: " << plyPath.string() << std::endl;
+    }
 
-    if (!window)
-        throw std::runtime_error("[VkEngine] Failed to create GLFW window.");
+    engine.run();
+    engine.cleanup();
 
-
-    VkContext context;
-    context.initialize(window);
-    
     return 0;
 }

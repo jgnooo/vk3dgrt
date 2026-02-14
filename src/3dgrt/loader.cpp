@@ -7,7 +7,6 @@
 
 #include <cmath>
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <sstream>
 
@@ -70,9 +69,6 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
             return false;
         }
 
-        std::cout << "[GaussianLoader] Loading: " << filePath.filename().string() << std::endl;
-        std::cout << "[GaussianLoader] Format: " << (plyFile.is_binary_file() ? "binary" : "ascii") << std::endl;
-
         std::shared_ptr<tinyply::PlyData> positions;
         std::shared_ptr<tinyply::PlyData> scales;
         std::shared_ptr<tinyply::PlyData> rotations;
@@ -95,7 +91,6 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         }
         catch (const std::exception&)
         {
-            std::cout << "[GaussianLoader] Warning: scale properties not found, using default" << std::endl;
         }
 
         try
@@ -104,7 +99,6 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         }
         catch (const std::exception&)
         {
-            std::cout << "[GaussianLoader] Warning: rotation properties not found, using identity" << std::endl;
         }
 
         try
@@ -113,7 +107,6 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         }
         catch (const std::exception&)
         {
-            std::cout << "[GaussianLoader] Warning: opacity property not found, using default" << std::endl;
         }
 
         try
@@ -148,7 +141,6 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
 
         if (hasFullSH && shRestChannels.size() == 45)
         {
-            std::cout << "[GaussianLoader] Found full SH coefficients (degree 3)" << std::endl;
         }
         else
         {
@@ -159,7 +151,6 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         plyFile.read(fileStream);
 
         const size_t particleCount = positions->count;
-        std::cout << "[GaussianLoader] Particle count: " << particleCount << std::endl;
 
         if (particleCount == 0)
         {
@@ -302,9 +293,6 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
             }
         }
 
-        std::cout << "[GaussianLoader] Successfully loaded " << particleCount << " particles" << std::endl;
-        std::cout << "[GaussianLoader] Data size: " << (outData.getDataSizeBytes() / 1024.0 / 1024.0) << " MB" << std::endl;
-        
         return true;
     }
     catch (const std::exception& e)

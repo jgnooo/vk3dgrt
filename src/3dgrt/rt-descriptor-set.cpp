@@ -12,8 +12,6 @@ bool RayTraceDescriptorSet::initialize(VkContext* context)
 {
     ctx_ = context;
 
-    std::cout << "[RayTraceDescriptorSet] Initializing..." << std::endl;
-
     if (!createLayout())
     {
         std::cerr << "[RayTraceDescriptorSet] Failed to create layout" << std::endl;

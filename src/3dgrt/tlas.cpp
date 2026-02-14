@@ -202,8 +202,6 @@ void TLAS::cleanup(VkContext* context)
         return;
     }
 
-    std::cout << "[TLAS] Cleaning up TLAS resources" << std::endl;
-
     tlas.cleanup(context);
     built              = false;
     instanceCount      = 0;

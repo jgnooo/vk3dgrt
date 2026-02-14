@@ -48,7 +48,6 @@ bool GaussianParticleBuffers::initialize(VkContext* context,
     {
         hasSH    = false;
         shDegree = 0;
-        std::cout << "[GaussianParticleBuffers] No SH coefficients to upload" << std::endl;
     }
 
     // 3. Upload Icosahedron mesh (shared by all instances)
@@ -59,21 +58,6 @@ bool GaussianParticleBuffers::initialize(VkContext* context,
     }
 
     initialized = true;
-
-    std::cout << "[GaussianParticleBuffers] GPU buffers initialized successfully" << std::endl;
-    VkDeviceSize soaTotalSize = positionBuffer.size + colorBuffer.size +
-                                quaternionBuffer.size + scaleBuffer.size;
-    std::cout << "[GaussianParticleBuffers]   Particle SoA buffers: "
-              << (soaTotalSize / 1024.0 / 1024.0) << " MB" << std::endl;
-    if (hasSH)
-    {
-        std::cout << "[GaussianParticleBuffers]   SH buffer: "
-                  << (shBuffer.size / 1024.0 / 1024.0) << " MB" << std::endl;
-    }
-    std::cout << "[GaussianParticleBuffers]   Icosahedron vertex buffer: "
-              << icosahedronVertexBuffer.size << " bytes" << std::endl;
-    std::cout << "[GaussianParticleBuffers]   Icosahedron index buffer: "
-              << icosahedronIndexBuffer.size << " bytes" << std::endl;
 
     return true;
 }
@@ -98,8 +82,6 @@ void GaussianParticleBuffers::cleanup(VmaAllocator allocator)
     particleCount = 0;
     hasSH         = false;
     shDegree      = 0;
-
-    std::cout << "[GaussianParticleBuffers] GPU buffers cleaned up" << std::endl;
 }
 
 

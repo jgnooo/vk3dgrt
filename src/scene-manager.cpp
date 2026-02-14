@@ -46,7 +46,6 @@ bool SceneManager::loadGRTScene(const std::filesystem::path& plyPath)
     }
 
     currentScene_ = std::move(scene);
-    std::cout << "[SceneManager] GRT scene loaded" << std::endl;
     return true;
 }
 

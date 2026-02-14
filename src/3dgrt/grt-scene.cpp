@@ -139,15 +139,10 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
     }
     else
     {
-        std::cout << "[GRTScene]   Loaded " << gaussianParticleData.getParticleCount() << " particles" << std::endl;
-
         dataLoaded = true;
 
         // Compute scene bounds
         computeSceneBounds();
-        std::cout << "[GRTScene]   Scene bounds: ("
-                  << minBound.x << ", " << minBound.y << ", " << minBound.z << ") to ("
-                  << maxBound.x << ", " << maxBound.y << ", " << maxBound.z << ")" << std::endl;
     }
 
     // 2. Initialize GPU buffers

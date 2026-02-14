@@ -114,9 +114,6 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${Vulkan_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/3dgrt
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -127,6 +124,10 @@ target_link_libraries(${PROJECT_NAME}
         vma
         glm
         tinyply
+)
+
+add_definitions(
+    -DDATA_DIR="${CMAKE_SOURCE_DIR}/data"
 )
 
 # --------------------------------------------------------------------------- #
