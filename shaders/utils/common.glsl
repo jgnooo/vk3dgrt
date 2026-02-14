@@ -27,9 +27,9 @@ const float EPSILON = 1e-6;
 
 
 // --------------------------------------------------- //
-//  CameraData - Camera parameters for ray tracing
+//  Camera parameters for ray tracing
 // --------------------------------------------------- //
-struct CameraData
+struct Camera
 {
     mat4  viewInverse;       // Inverse view matrix
     mat4  projInverse;       // Inverse projection matrix

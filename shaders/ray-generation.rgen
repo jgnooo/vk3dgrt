@@ -210,7 +210,7 @@ void main()
                     }
                 }
             }
-            else if (sceneBounds.renderMode == RENDER_MODE_GAUSSIAN)
+            else if (sceneBounds.renderMode == RENDER_MODE_GS)
             {
                 // 1. Load particle color + opacity (early cull check)
                 vec4  pColor   = colorBuffer.data[particleId];
