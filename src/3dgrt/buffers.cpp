@@ -1,9 +1,8 @@
 #include "buffers.h"
 
+#include "log.h"
+
 #include "vulkan/vkerror.h"
-
-#include <iostream>
-
 
 namespace vk3dgrt {
 
@@ -14,13 +13,13 @@ bool GaussianParticleBuffers::initialize(VkContext* context,
 {
     if (initialized)
     {
-        std::cerr << "[GaussianParticleBuffers] Already initialized" << std::endl;
+        Log::ERR("GPU") << "Already initialized";
         return false;
     }
 
     if (data.particles.empty())
     {
-        std::cerr << "[GaussianParticleBuffers] No particles to upload" << std::endl;
+        Log::ERR("GPU") << "No particles to upload";
         return false;
     }
 
@@ -29,7 +28,7 @@ bool GaussianParticleBuffers::initialize(VkContext* context,
     // 1. Upload GaussianParticle data
     if (!uploadParticleData(context, data, transferQueue, transferCommandPool))
     {
-        std::cerr << "[GaussianParticleBuffers] Failed to upload particle data" << std::endl;
+        Log::ERR("GPU") << "Failed to upload particle data";
         return false;
     }
 
@@ -38,7 +37,7 @@ bool GaussianParticleBuffers::initialize(VkContext* context,
     {
         if (!uploadSHData(context, data, transferQueue, transferCommandPool))
         {
-            std::cerr << "[GaussianParticleBuffers] Failed to upload SH data" << std::endl;
+            Log::ERR("GPU") << "Failed to upload SH data";
             return false;
         }
         hasSH    = true;
@@ -53,11 +52,17 @@ bool GaussianParticleBuffers::initialize(VkContext* context,
     // 3. Upload Icosahedron mesh (shared by all instances)
     if (!uploadIcosahedronData(context, transferQueue, transferCommandPool))
     {
-        std::cerr << "[GaussianParticleBuffers] Failed to upload icosahedron data" << std::endl;
+        Log::ERR("GPU") << "Failed to upload icosahedron data";
         return false;
     }
 
     initialized = true;
+
+    VkDeviceSize totalSize = positionBuffer.size + colorBuffer.size +
+                             quaternionBuffer.size + scaleBuffer.size +
+                             (hasSH ? shBuffer.size : 0) +
+                             icosahedronVertexBuffer.size + icosahedronIndexBuffer.size;
+    Log::OK("GPU") << "Buffers uploaded (" << Log::Color::Bold << Log::formatMemory(totalSize) << Log::Color::Reset << ")";
 
     return true;
 }
@@ -364,7 +369,7 @@ bool GaussianParticleBuffers::stageAndUpload(VkContext* context,
 
     if (waitResult == VK_TIMEOUT)
     {
-        std::cerr << "[GaussianParticleBuffers] Transfer timeout" << std::endl;
+        Log::ERR("GPU") << "Transfer timeout";
         vkDestroyFence(device, fence, nullptr);
         vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
         stagingBuffer.cleanup(context->getAllocator());

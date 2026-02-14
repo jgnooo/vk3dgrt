@@ -1,5 +1,7 @@
 #include "loader.h"
 
+#include "log.h"
+
 #define TINYPLY_IMPLEMENTATION
 #include <tinyply.h>
 
@@ -69,6 +71,10 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
             return false;
         }
 
+        Log::INFO("Loader") << "Loading " << Log::Color::Bold
+            << filePath.filename().string() << Log::Color::Reset
+            << Log::Color::Dim << " (" << (plyFile.is_binary_file() ? "binary" : "ascii") << ")" << Log::Color::Reset;
+
         std::shared_ptr<tinyply::PlyData> positions;
         std::shared_ptr<tinyply::PlyData> scales;
         std::shared_ptr<tinyply::PlyData> rotations;
@@ -91,6 +97,7 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         }
         catch (const std::exception&)
         {
+            Log::WARN("Loader") << "scale properties not found, using default";
         }
 
         try
@@ -99,6 +106,7 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         }
         catch (const std::exception&)
         {
+            Log::WARN("Loader") << "rotation properties not found, using identity";
         }
 
         try
@@ -107,6 +115,7 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         }
         catch (const std::exception&)
         {
+            Log::WARN("Loader") << "opacity property not found, using default";
         }
 
         try
@@ -139,10 +148,7 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
             }
         }
 
-        if (hasFullSH && shRestChannels.size() == 45)
-        {
-        }
-        else
+        if (!hasFullSH || shRestChannels.size() != 45)
         {
             shRestChannels.clear();
             hasFullSH = false;
@@ -151,6 +157,11 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
         plyFile.read(fileStream);
 
         const size_t particleCount = positions->count;
+        Log::INFO("Loader") << "  Particles : " << Log::Color::Bold << Log::formatCount(particleCount) << Log::Color::Reset;
+        if (hasFullSH)
+            Log::INFO("Loader") << "  SH degree : " << Log::Color::Bold << "3" << Log::Color::Reset;
+        else if (shDC)
+            Log::INFO("Loader") << "  SH degree : " << Log::Color::Bold << "0" << Log::Color::Reset << " (DC only)";
 
         if (particleCount == 0)
         {
@@ -293,6 +304,8 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
             }
         }
 
+        Log::INFO("Loader") << "  Data size : " << Log::Color::Bold << Log::formatMemory(outData.getDataSizeBytes()) << Log::Color::Reset;
+        Log::OK("Loader") << "Loaded successfully";
         return true;
     }
     catch (const std::exception& e)

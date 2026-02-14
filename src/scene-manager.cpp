@@ -1,8 +1,7 @@
 #include "scene-manager.h"
 
+#include "log.h"
 #include "3dgrt/grt-scene.h"
-
-#include <iostream>
 
 
 void SceneManager::initialize(VkProvider* provider, GLFWwindow* window)
@@ -24,7 +23,7 @@ bool SceneManager::loadGRTScene(const std::filesystem::path& plyPath)
 {
     if (!provider_)
     {
-        std::cerr << "[SceneManager] Not initialized" << std::endl;
+        Log::ERR("Scene") << "Not initialized";
         return false;
     }
 
@@ -35,13 +34,13 @@ bool SceneManager::loadGRTScene(const std::filesystem::path& plyPath)
     auto scene = std::make_unique<vk3dgrt::GRTScene>();
     if (!scene->initialize(provider_))
     {
-        std::cerr << "[SceneManager] Failed to initialize GRT scene" << std::endl;
+        Log::ERR("Scene") << "Failed to initialize GRT scene";
         return false;
     }
 
     if (!scene->loadScene(plyPath, window_))
     {
-        std::cerr << "[SceneManager] Failed to load GRT scene" << std::endl;
+        Log::ERR("Scene") << "Failed to load GRT scene";
         return false;
     }
 

@@ -1,5 +1,7 @@
 #include "vkcontext.h"
+
 #include "vkerror.h"
+#include "log.h"
 
 #include <GLFW/glfw3.h>
 
@@ -54,12 +56,14 @@ static void printGpuInfo(uint32_t order, VkPhysicalDevice physicalDevice)
     uint32_t drvMin   = VK_VERSION_MINOR(props.driverVersion);
     uint32_t drvPatch = VK_VERSION_PATCH(props.driverVersion);
 
-    printf(" +-[ GPU %u ]--------------------------------------------------+\n", order);
+    std::cout << Log::Color::Dim << " +-[ " << Log::Color::Reset
+              << Log::Color::Bold << "GPU " << order << Log::Color::Reset
+              << Log::Color::Dim << " ]--------------------------------------------------+" << Log::Color::Reset << std::endl;
     printf(" | Device Name    : %-41s \n", props.deviceName);
     printf(" | Device Type    : %-41s \n", typeStr);
     printf(" | API Version    : %u.%u.%-37u \n", apiMaj, apiMin, apiPatch);
     printf(" | Driver Version : %u.%u.%-37u \n", drvMaj, drvMin, drvPatch);
-    printf(" +------------------------------------------------------------+\n");
+    std::cout << Log::Color::Dim << " +------------------------------------------------------------+" << Log::Color::Reset << std::endl;
 }
 
 
@@ -152,14 +156,10 @@ void VkContext::createDevice()
     std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
     VK_CHECK(vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data()));
 
-    printf("\n");
-    printf(" =============================================================\n");
-    printf("  Detecting Physical Devices... (%u found)\n", deviceCount);
-    printf(" =============================================================\n");
+    Log::INFO("Vulkan") << "Detecting physical devices (" << deviceCount << " found)";
 
     for (uint32_t i = 0; i < deviceCount; ++i)
         printGpuInfo(i, physicalDevices[i]);
-    printf("\n");
 
     std::vector<const char*> requiredExtensions = {
         VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
@@ -269,8 +269,7 @@ void VkContext::createDevice()
     if (physicalDevice == VK_NULL_HANDLE)
         throw std::runtime_error("[VkContext] No suitable Vulkan physical device found.");
 
-    printf(" >> Selected GPU: [%s]\n\n", props.deviceName);
-    fflush(stdout);
+    Log::OK("Vulkan") << "Selected GPU: " << Log::Color::Bold << props.deviceName << Log::Color::Reset;
 
     std::set<uint32_t> uniqueQueueFamilies = {
         queueFamilyIndices[QueueType::GRAPHICS],
@@ -410,7 +409,7 @@ void VkContext::createAllocator()
 
     VK_CHECK(vmaCreateAllocator(&allocatorInfo, &allocator));
 
-    printf(" >> VMA Allocator created successfully.\n");
+    Log::OK("Vulkan") << "VMA allocator created";
 }
 
 

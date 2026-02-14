@@ -1,5 +1,7 @@
 #include "vkengine.h"
+
 #include "vkerror.h"
+#include "log.h"
 #include "3dgrt/grt-scene.h"
 
 #define VMA_IMPLEMENTATION
@@ -7,7 +9,6 @@
 
 #include <GLFW/glfw3.h>
 
-#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -33,6 +34,8 @@ void VkEngine::initialize()
     sceneManager.initialize(this, window);
 
     isInitialized = true;
+
+    Log::OK("Engine") << "Initialized (" << swapchain.extent.width << "x" << swapchain.extent.height << ")";
 }
 
 

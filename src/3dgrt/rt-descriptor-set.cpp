@@ -1,8 +1,9 @@
 #include "rt-descriptor-set.h"
 
+#include "log.h"
+
 #include "vulkan/vkcontext.h"
 
-#include <iostream>
 #include <vector>
 
 
@@ -14,19 +15,19 @@ bool RayTraceDescriptorSet::initialize(VkContext* context)
 
     if (!createLayout())
     {
-        std::cerr << "[RayTraceDescriptorSet] Failed to create layout" << std::endl;
+        Log::ERR("Render") << "Failed to create layout";
         return false;
     }
 
     if (!createPool())
     {
-        std::cerr << "[RayTraceDescriptorSet] Failed to create pool" << std::endl;
+        Log::ERR("Render") << "Failed to create pool";
         return false;
     }
 
     if (!allocateSet())
     {
-        std::cerr << "[RayTraceDescriptorSet] Failed to allocate set" << std::endl;
+        Log::ERR("Render") << "Failed to allocate set";
         return false;
     }
 

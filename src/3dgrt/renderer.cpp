@@ -1,8 +1,9 @@
 #include "renderer.h"
 
+#include "log.h"
+
 #include "vulkan/vkerror.h"
 
-#include <iostream>
 #include <array>
 
 
@@ -15,7 +16,7 @@ bool Renderer::initialize(VkContext* context,
 {
     if (initialized)
     {
-        std::cerr << "[Renderer] Already initialized" << std::endl;
+        Log::ERR("Render") << "Already initialized";
         return false;
     }
 
@@ -24,46 +25,48 @@ bool Renderer::initialize(VkContext* context,
     // 1. Initialize RT descriptor set
     if (!rtDescriptorSet.initialize(ctx))
     {
-        std::cerr << "[Renderer] Failed to initialize RT descriptor set" << std::endl;
+        Log::ERR("Render") << "Failed to initialize RT descriptor set";
         return false;
     }
 
     // 2. Create uniform buffers
     if (!createUniformBuffers())
     {
-        std::cerr << "[Renderer] Failed to create uniform buffers" << std::endl;
+        Log::ERR("Render") << "Failed to create uniform buffers";
         return false;
     }
 
     // 3. Create output image
     if (!createOutputImage(width, height))
     {
-        std::cerr << "[Renderer] Failed to create output image" << std::endl;
+        Log::ERR("Render") << "Failed to create output image";
         return false;
     }
 
     // 4. Load shaders
     if (!loadShaders(shaderPath))
     {
-        std::cerr << "[Renderer] Failed to load shaders" << std::endl;
+        Log::ERR("Render") << "Failed to load shaders";
         return false;
     }
 
     // 5. Create ray tracing pipeline
     if (!createPipeline())
     {
-        std::cerr << "[Renderer] Failed to create pipeline" << std::endl;
+        Log::ERR("Render") << "Failed to create pipeline";
         return false;
     }
 
     // 6. Create shader binding table
     if (!createShaderBindingTable())
     {
-        std::cerr << "[Renderer] Failed to create shader binding table" << std::endl;
+        Log::ERR("Render") << "Failed to create shader binding table";
         return false;
     }
 
     initialized = true;
+
+    Log::OK("Render") << "Pipeline ready (" << Log::Color::Bold << width << "x" << height << Log::Color::Reset << ")";
 
     return true;
 }
@@ -127,19 +130,19 @@ bool Renderer::updateDescriptors(const TLAS& tlas, const GaussianParticleBuffers
 {
     if (!initialized)
     {
-        std::cerr << "[Renderer] Cannot update descriptors: not initialized" << std::endl;
+        Log::ERR("Render") << "Cannot update descriptors: not initialized";
         return false;
     }
 
     if (!tlas.isBuilt())
     {
-        std::cerr << "[Renderer] Cannot update descriptors: TLAS not built" << std::endl;
+        Log::ERR("Render") << "Cannot update descriptors: TLAS not built";
         return false;
     }
 
     if (!gaussianParticleBuffers.isInitialized())
     {
-        std::cerr << "[Renderer] Cannot update descriptors: GaussianParticleBuffers not initialized" << std::endl;
+        Log::ERR("Render") << "Cannot update descriptors: GaussianParticleBuffers not initialized";
         return false;
     }
 
@@ -373,7 +376,7 @@ bool Renderer::resize(uint32_t width, uint32_t height)
     // Create new output image
     if (!createOutputImage(width, height))
     {
-        std::cerr << "[Renderer] Failed to resize output image" << std::endl;
+        Log::ERR("Render") << "Failed to resize output image";
         return false;
     }
 
@@ -430,7 +433,7 @@ bool Renderer::createOutputImage(uint32_t width, uint32_t height)
 
     if (outputImage.image == VK_NULL_HANDLE)
     {
-        std::cerr << "[Renderer] Failed to create output image" << std::endl;
+        Log::ERR("Render") << "Failed to create output image";
         return false;
     }
 
@@ -455,7 +458,7 @@ bool Renderer::loadShaders(const std::string& shaderPath)
     }
     catch (const std::exception& e)
     {
-        std::cerr << "[Renderer] Shader loading failed: " << e.what() << std::endl;
+        Log::ERR("Render") << "Shader loading failed: " << e.what();
         return false;
     }
 
@@ -514,7 +517,7 @@ bool Renderer::createPipeline()
 
     if (pipeline == VK_NULL_HANDLE)
     {
-        std::cerr << "[Renderer] Failed to create ray tracing pipeline" << std::endl;
+        Log::ERR("Render") << "Failed to create ray tracing pipeline";
         return false;
     }
 

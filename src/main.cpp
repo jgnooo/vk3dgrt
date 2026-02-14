@@ -1,8 +1,8 @@
 #include "vulkan/vkengine.h"
 #include "3dgrt/grt-scene.h"
+#include "log.h"
 
 #include <filesystem>
-#include <iostream>
 
 
 constexpr const char* DEFAULT_PLY_PATH = DATA_DIR "/cactus.ply";
@@ -10,7 +10,11 @@ constexpr const char* DEFAULT_PLY_PATH = DATA_DIR "/cactus.ply";
 
 int main(int argc, char* argv[])
 {
+    Log::init();
+    Log::banner();
+
     VkEngine engine;
+    engine.initialize();
 
     std::filesystem::path plyPath;
     if (argc > 1)
@@ -26,19 +30,27 @@ int main(int argc, char* argv[])
     {
         if (engine.getSceneManager().loadGRTScene(plyPath))
         {
+            auto* gs = engine.getSceneManager().getGRTScene();
+            if (gs)
+            {
+                Log::OK("Scene") << "Ready — "
+                    << Log::formatCount(gs->getParticleCount()) << " gaussians";
+            }
         }
         else
         {
-            std::cerr << "[Main] Failed to load scene, continuing without GRT rendering" << std::endl;
+            Log::ERR("Main") << "Failed to load scene, continuing without GRT rendering";
         }
     }
     else
     {
-        std::cerr << "[Main] PLY file not found: " << plyPath.string() << std::endl;
+        Log::ERR("Main") << "PLY file not found: " << plyPath.string();
     }
 
+    Log::INFO("Main") << "Entering render loop (close window to exit)";
     engine.run();
     engine.cleanup();
+    Log::OK("Main") << "Exited";
 
     return 0;
 }

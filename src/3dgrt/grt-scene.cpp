@@ -1,11 +1,12 @@
 #include "grt-scene.h"
 
+#include "log.h"
+
 #include "vulkan/vkprovider.h"
 #include "vulkan/vkerror.h"
 
 #include <GLFW/glfw3.h>
 
-#include <iostream>
 #include <algorithm>
 
 
@@ -15,7 +16,7 @@ bool GRTScene::initialize(VkProvider* provider)
 {
     if (initialized)
     {
-        std::cerr << "[GRTScene] Already initialized" << std::endl;
+        Log::ERR("Scene") << "Already initialized";
         return false;
     }
 
@@ -124,7 +125,7 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
 {
     if (!provider_)
     {
-        std::cerr << "[GRTScene] Provider not set. Call initialize() first." << std::endl;
+        Log::ERR("Scene") << "Provider not set. Call initialize() first.";
         return false;
     }
 
@@ -134,7 +135,7 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
     Loader loader;
     if (!loader.loadPLY(plyPath, gaussianParticleData))
     {
-        std::cerr << "[GRTScene] Failed to load PLY: " << loader.getLastError() << std::endl;
+        Log::ERR("Scene") << "Failed to load PLY: " << loader.getLastError();
         // Continue without data - renderer can still be initialized
     }
     else
@@ -143,6 +144,11 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
 
         // Compute scene bounds
         computeSceneBounds();
+
+        Log::INFO("Scene") << "Bounds: ("
+            << std::fixed << std::setprecision(2)
+            << minBound.x << ", " << minBound.y << ", " << minBound.z << ") to ("
+            << maxBound.x << ", " << maxBound.y << ", " << maxBound.z << ")";
     }
 
     // 2. Initialize GPU buffers
@@ -153,7 +159,7 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
 
         if (!gaussianParticleBuffers.initialize(context, gaussianParticleData, transferQueue, transferCmdPool))
         {
-            std::cerr << "[GRTScene] Failed to initialize GPU buffers" << std::endl;
+            Log::ERR("Scene") << "Failed to initialize GPU buffers";
             return false;
         }
     }
@@ -163,7 +169,7 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
     {
         if (!blas.buildAndSubmit(provider_, gaussianParticleBuffers))
         {
-            std::cerr << "[GRTScene] Failed to build BLAS" << std::endl;
+            Log::ERR("Scene") << "Failed to build BLAS";
             return false;
         }
     }
@@ -173,7 +179,7 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
     {
         if (!tlas.buildAndSubmit(provider_, gaussianParticleData, blas.getDeviceAddress()))
         {
-            std::cerr << "[GRTScene] Failed to build TLAS" << std::endl;
+            Log::ERR("Scene") << "Failed to build TLAS";
             return false;
         }
     }
@@ -186,7 +192,7 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
 
     if (!renderer.initialize(context, swapchain.extent.width, swapchain.extent.height, shaderPath))
     {
-        std::cerr << "[GRTScene] Failed to initialize renderer" << std::endl;
+        Log::ERR("Scene") << "Failed to initialize renderer";
         return false;
     }
 
@@ -195,7 +201,7 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
     {
         if (!renderer.updateDescriptors(tlas, gaussianParticleBuffers))
         {
-            std::cerr << "[GRTScene] Failed to update descriptors" << std::endl;
+            Log::ERR("Scene") << "Failed to update descriptors";
             return false;
         }
 
@@ -245,7 +251,7 @@ bool GRTScene::initializeEmpty(GLFWwindow* window)
 {
     if (!provider_)
     {
-        std::cerr << "[GRTScene] Provider not set. Call initialize() first." << std::endl;
+        Log::ERR("Scene") << "Provider not set. Call initialize() first.";
         return false;
     }
 
@@ -257,7 +263,7 @@ bool GRTScene::initializeEmpty(GLFWwindow* window)
 
     if (!renderer.initialize(context, swapchain.extent.width, swapchain.extent.height, shaderPath))
     {
-        std::cerr << "[GRTScene] Failed to initialize renderer" << std::endl;
+        Log::ERR("Scene") << "Failed to initialize renderer";
         return false;
     }
 

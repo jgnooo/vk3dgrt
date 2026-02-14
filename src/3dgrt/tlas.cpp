@@ -1,10 +1,9 @@
 #include "tlas.h"
 
+#include "log.h"
+
 #include "vulkan/vkprovider.h"
 #include "vulkan/vkerror.h"
-
-#include <iostream>
-
 
 namespace vk3dgrt {
 
@@ -17,19 +16,19 @@ bool TLAS::build(VkContext* context,
 {
     if (built)
     {
-        std::cerr << "[TLAS] TLAS already built. Use rebuild() to update." << std::endl;
+        Log::ERR("TLAS") << "TLAS already built. Use rebuild() to update.";
         return false;
     }
 
     if (blasDeviceAddress == 0)
     {
-        std::cerr << "[TLAS] Invalid BLAS device address" << std::endl;
+        Log::ERR("TLAS") << "Invalid BLAS device address";
         return false;
     }
 
     if (gaussianParticleData.particles.empty())
     {
-        std::cerr << "[TLAS] No particles to build TLAS" << std::endl;
+        Log::ERR("TLAS") << "No particles to build TLAS";
         return false;
     }
 
@@ -59,12 +58,14 @@ bool TLAS::build(VkContext* context,
 
     if (tlas.accelerationStructure == VK_NULL_HANDLE)
     {
-        std::cerr << "[TLAS] Failed to build TLAS" << std::endl;
+        Log::ERR("TLAS") << "Failed to build TLAS";
         return false;
     }
 
     built              = true;
     consecutiveUpdates = 0;
+
+    Log::OK("TLAS") << "Built (" << Log::Color::Bold << Log::formatCount(instanceCount) << Log::Color::Reset << " instances)";
 
     return true;
 }
@@ -78,19 +79,19 @@ bool TLAS::rebuild(VkContext* context,
 {
     if (!built)
     {
-        std::cerr << "[TLAS] Cannot rebuild: TLAS not built yet. Call build() first." << std::endl;
+        Log::ERR("TLAS") << "Cannot rebuild: TLAS not built yet. Call build() first.";
         return false;
     }
 
     if (cachedBlasAddress == 0)
     {
-        std::cerr << "[TLAS] Cannot rebuild: Invalid cached BLAS address" << std::endl;
+        Log::ERR("TLAS") << "Cannot rebuild: Invalid cached BLAS address";
         return false;
     }
 
     if (gaussianParticleData.particles.empty())
     {
-        std::cerr << "[TLAS] No particles to rebuild TLAS" << std::endl;
+        Log::ERR("TLAS") << "No particles to rebuild TLAS";
         return false;
     }
 
@@ -125,7 +126,7 @@ bool TLAS::rebuild(VkContext* context,
 
         if (tlas.accelerationStructure == VK_NULL_HANDLE)
         {
-            std::cerr << "[TLAS] Failed to rebuild TLAS" << std::endl;
+            Log::ERR("TLAS") << "Failed to rebuild TLAS";
             return false;
         }
 
@@ -145,7 +146,7 @@ bool TLAS::rebuild(VkContext* context,
 
         if (!updateResult)
         {
-            std::cerr << "[TLAS] Failed to update TLAS" << std::endl;
+            Log::ERR("TLAS") << "Failed to update TLAS";
             return false;
         }
 

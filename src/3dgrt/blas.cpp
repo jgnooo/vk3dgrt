@@ -1,14 +1,12 @@
 #include "blas.h"
 
 #include "buffers.h"
+#include "log.h"
 
 #include "vulkan/vkprovider.h"
 #include "vulkan/vkerror.h"
 
 #include <glm/glm.hpp>
-
-#include <iostream>
-
 
 namespace vk3dgrt {
 
@@ -18,7 +16,7 @@ bool BLAS::build(VkContext* context,
 {
     if (!buffers.isInitialized())
     {
-        std::cerr << "[BLAS] GaussianParticleBuffers not initialized" << std::endl;
+        Log::ERR("BLAS") << "GaussianParticleBuffers not initialized";
         return false;
     }
 
@@ -41,13 +39,13 @@ bool BLAS::build(VkContext* context,
 {
     if (built)
     {
-        std::cerr << "[BLAS] BLAS already built" << std::endl;
+        Log::ERR("BLAS") << "BLAS already built";
         return false;
     }
 
     if (vertexBuffer == 0 || indexBuffer == 0)
     {
-        std::cerr << "[BLAS] Invalid buffer addresses" << std::endl;
+        Log::ERR("BLAS") << "Invalid buffer addresses";
         return false;
     }
 
@@ -78,7 +76,7 @@ bool BLAS::build(VkContext* context,
 
     if (blas.accelerationStructure == VK_NULL_HANDLE)
     {
-        std::cerr << "[BLAS] Failed to build BLAS" << std::endl;
+        Log::ERR("BLAS") << "Failed to build BLAS";
         return false;
     }
 
@@ -122,6 +120,12 @@ bool BLAS::buildAndSubmit(VkProvider* provider, const GaussianParticleBuffers& b
     // Replace original with compacted
     blas.cleanup(context);
     blas = std::move(compactBlas);
+
+    int savedPct = (originalSize > 0) ? static_cast<int>(100 - (compactedSize * 100 / originalSize)) : 0;
+    Log::OK("BLAS") << "Built (compacted "
+        << Log::formatMemory(originalSize) << " -> "
+        << Log::Color::Bold << Log::formatMemory(compactedSize) << Log::Color::Reset
+        << ", " << savedPct << "% saved)";
 
     return true;
 }
