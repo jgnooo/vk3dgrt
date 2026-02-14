@@ -14,15 +14,17 @@
 // --------------------------------------------------- //
 //  Extension Function Pointers
 // --------------------------------------------------- //
-PFN_vkGetBufferDeviceAddressKHR                vkGetBufferDeviceAddressKHR_                = nullptr;
-PFN_vkCreateAccelerationStructureKHR           vkCreateAccelerationStructureKHR_           = nullptr;
-PFN_vkDestroyAccelerationStructureKHR          vkDestroyAccelerationStructureKHR_          = nullptr;
-PFN_vkGetAccelerationStructureBuildSizesKHR    vkGetAccelerationStructureBuildSizesKHR_    = nullptr;
-PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR_ = nullptr;
-PFN_vkCmdBuildAccelerationStructuresKHR        vkCmdBuildAccelerationStructuresKHR_        = nullptr;
-PFN_vkCreateRayTracingPipelinesKHR             vkCreateRayTracingPipelinesKHR_             = nullptr;
-PFN_vkGetRayTracingShaderGroupHandlesKHR       vkGetRayTracingShaderGroupHandlesKHR_       = nullptr;
-PFN_vkCmdTraceRaysKHR                          vkCmdTraceRaysKHR_                          = nullptr;
+PFN_vkGetBufferDeviceAddressKHR                   vkGetBufferDeviceAddressKHR_                   = nullptr;
+PFN_vkCreateAccelerationStructureKHR              vkCreateAccelerationStructureKHR_              = nullptr;
+PFN_vkDestroyAccelerationStructureKHR             vkDestroyAccelerationStructureKHR_             = nullptr;
+PFN_vkGetAccelerationStructureBuildSizesKHR       vkGetAccelerationStructureBuildSizesKHR_       = nullptr;
+PFN_vkGetAccelerationStructureDeviceAddressKHR    vkGetAccelerationStructureDeviceAddressKHR_    = nullptr;
+PFN_vkCmdBuildAccelerationStructuresKHR           vkCmdBuildAccelerationStructuresKHR_           = nullptr;
+PFN_vkCreateRayTracingPipelinesKHR                vkCreateRayTracingPipelinesKHR_                = nullptr;
+PFN_vkGetRayTracingShaderGroupHandlesKHR          vkGetRayTracingShaderGroupHandlesKHR_          = nullptr;
+PFN_vkCmdTraceRaysKHR                             vkCmdTraceRaysKHR_                             = nullptr;
+PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR_ = nullptr;
+PFN_vkCmdCopyAccelerationStructureKHR             vkCmdCopyAccelerationStructureKHR_             = nullptr;
 
 
 // --------------------------------------------------- //
