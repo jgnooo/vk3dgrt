@@ -325,6 +325,7 @@ void VkEngine::draw()
     if (gs)
     {
         imguiManager.setSHAvailable(gs->hasSHData());
+        imguiManager.setSHDegree(static_cast<int>(gs->getSHDegree()));
     }
 
     // Build ImGui UI

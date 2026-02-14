@@ -162,6 +162,8 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
             Log::ERR("Scene") << "Failed to initialize GPU buffers";
             return false;
         }
+
+        shDegree_ = gaussianParticleBuffers.getSHDegree();
     }
 
     // 3. Build Icosahedron BLAS
