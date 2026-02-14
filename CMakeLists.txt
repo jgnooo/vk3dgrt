@@ -82,6 +82,8 @@ add_executable(${PROJECT_NAME}
     src/vulkan/vkaccelstruct.cpp
     src/vulkan/vkpipeline.h
     src/vulkan/vkpipeline.cpp
+    src/vulkan/vkengine.h
+    src/vulkan/vkengine.cpp
 
     # 3DGRT
     src/3dgrt/data.h
@@ -102,6 +104,8 @@ add_executable(${PROJECT_NAME}
     src/3dgrt/grt-scene.cpp
 
     # GUI
+    src/gui/gui.h
+    src/gui/gui.cpp
     src/gui/camera.h
     src/gui/camera.cpp
 )
