@@ -46,6 +46,16 @@ class ImGuiManager
     bool shDegreeChanged_ = false;
     bool shAvailable_     = false;
 
+    // Reflection settings
+    bool reflectEnabled_        = false;
+    bool reflectEnabledChanged_ = false;
+    int  maxBounces_            = 1;
+    bool maxBouncesChanged_     = false;
+
+    // Mesh
+    bool insertTeapot_    = false;
+    int  removeMeshIndex_ = -1;
+
 public:
     void initialize(GLFWwindow* window,
                     VkContext* context,
@@ -92,6 +102,23 @@ public:
     bool isSHDegreeChanged() const { return shDegreeChanged_; }
     void clearSHDegreeChanged() { shDegreeChanged_ = false; }
     void setSHAvailable(bool available) { shAvailable_ = available; }
+
+    // Reflection settings
+    void setReflectionEnabled(bool enabled) { reflectEnabled_ = enabled; }
+    bool isReflectionEnabled() const { return reflectEnabled_; }
+    bool isReflectionEnabledChanged() const { return reflectEnabledChanged_; }
+    void clearReflectionEnabledChanged() { reflectEnabledChanged_ = false; }
+
+    void setMaxBounces(int bounces) { maxBounces_ = bounces; }
+    int  getMaxBounces() const { return maxBounces_; }
+    bool isMaxBouncesChanged() const { return maxBouncesChanged_; }
+    void clearMaxBouncesChanged() { maxBouncesChanged_ = false; }
+
+    // Mesh
+    bool shouldInsertTeapot() const { return insertTeapot_; }
+    void clearInsertTeapot() { insertTeapot_ = false; }
+    int  getRemoveMeshIndex() const { return removeMeshIndex_; }
+    void clearRemoveMeshIndex() { removeMeshIndex_ = -1; }
 };
 
 #endif // GUI_H
