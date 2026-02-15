@@ -16,15 +16,15 @@ namespace vk3dgrt {
 
 class TLAS
 {
-    bool                         built             = false;
-    uint32_t                     instanceCount     = 0;
-    VkDeviceAddress              cachedBlasAddress = 0;
+    bool            built             = false;
+    uint32_t        instanceCount     = 0;
+    VkDeviceAddress cachedBlasAddress = 0;
 
     AccelerationStructure        tlas;
     AccelerationStructureBuilder builder;
 
-    uint32_t                     consecutiveUpdates = 0;
-    static constexpr uint32_t    MAX_CONSECUTIVE_UPDATES = 15;
+    uint32_t                  consecutiveUpdates = 0;
+    static constexpr uint32_t MAX_CONSECUTIVE_UPDATES = 15;
 
 public:
     TLAS()  = default;
