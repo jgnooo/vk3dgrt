@@ -355,6 +355,50 @@ void VkEngine::draw()
         imguiManager.clearSHDegreeChanged();
     }
 
+    // Handle reflection toggle from GUI
+    if (imguiManager.isReflectionEnabledChanged())
+    {
+        auto* gs = sceneManager.getGRTScene();
+        if (gs)
+        {
+            gs->setReflectionEnabled(imguiManager.isReflectionEnabled());
+        }
+        imguiManager.clearReflectionEnabledChanged();
+    }
+
+    // Handle max bounces changes from GUI
+    if (imguiManager.isMaxBouncesChanged())
+    {
+        auto* gs = sceneManager.getGRTScene();
+        if (gs)
+        {
+            gs->setMaxBounces(static_cast<uint32_t>(imguiManager.getMaxBounces()));
+        }
+        imguiManager.clearMaxBouncesChanged();
+    }
+
+    // Handle mesh insertion from GUI
+    if (imguiManager.shouldInsertTeapot())
+    {
+        auto* gs = sceneManager.getGRTScene();
+        if (gs)
+        {
+            gs->addMesh(vk3dgrt::MeshPreset::TEAPOT);
+        }
+        imguiManager.clearInsertTeapot();
+    }
+
+    // Handle mesh removal from GUI
+    if (imguiManager.getRemoveMeshIndex() >= 0)
+    {
+        auto* gs = sceneManager.getGRTScene();
+        if (gs)
+        {
+            gs->removeMesh(static_cast<uint32_t>(imguiManager.getRemoveMeshIndex()));
+        }
+        imguiManager.clearRemoveMeshIndex();
+    }
+
     // Finalize ImGui frame
     imguiManager.render();
 

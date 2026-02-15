@@ -49,6 +49,12 @@ void GRTScene::cleanup()
         tlas.cleanup(context);
         blas.cleanup(context);
 
+        // Cleanup mesh resources
+        meshTlas_.cleanup(context);
+        meshBlas_.cleanup(context);
+        meshBuffers_.cleanup(context->getAllocator());
+        meshInstances_.clear();
+
         // Cleanup GPU buffers
         gaussianParticleBuffers.cleanup(context->getAllocator());
     }
@@ -316,6 +322,153 @@ void GRTScene::setSHDegree(uint32_t degree)
 }
 
 
+bool GRTScene::addMesh(MeshPreset preset,
+                       const glm::vec3& position,
+                       const glm::vec3& scale)
+{
+    if (!initialized || !dataLoaded)
+    {
+        return false;
+    }
+
+    // 1. Create CPU mesh
+    MeshInstance mesh = createPresetMesh(preset, position, scale);
+    meshInstances_.push_back(std::move(mesh));
+
+    // 2. Rebuild GPU resources (buffers + BLAS + TLAS + descriptors)
+    return rebuildMeshResources();
+}
+
+
+bool GRTScene::removeMesh(uint32_t index)
+{
+    if (index >= meshInstances_.size())
+    {
+        return false;
+    }
+
+    meshInstances_.erase(meshInstances_.begin() + index);
+
+    if (meshInstances_.empty())
+    {
+        // All meshes removed — cleanup mesh resources
+        VkContext* context = &provider_->getContext();
+        vkDeviceWaitIdle(context->getDevice());
+
+        meshTlas_.cleanup(context);
+        meshBlas_.cleanup(context);
+        meshBuffers_.cleanup(context->getAllocator());
+
+        // Update descriptors (mesh bindings cleared)
+        renderer.markDescriptorsDirty();
+        renderer.updateDescriptors(tlas, gaussianParticleBuffers, nullptr, nullptr);
+
+        // Update SceneBounds UBO (meshCount = 0)
+        SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+        renderer.updateSceneBounds(boundsUBO);
+        return true;
+    }
+
+    return rebuildMeshResources();
+}
+
+
+bool GRTScene::rebuildMeshResources()
+{
+    VkContext* context = &provider_->getContext();
+
+    // Wait for GPU idle before rebuilding
+    vkDeviceWaitIdle(context->getDevice());
+
+    // 1. Cleanup existing mesh resources
+    meshTlas_.cleanup(context);
+    meshBlas_.cleanup(context);
+    meshBuffers_.cleanup(context->getAllocator());
+
+    // 2. Create GPU buffers
+    VkQueue transferQueue         = context->queues[QueueType::TRANSFER];
+    VkCommandPool transferCmdPool = provider_->getCommandPool(QueueType::TRANSFER);
+
+    if (!meshBuffers_.initialize(context, meshInstances_, transferQueue, transferCmdPool))
+    {
+        Log::ERR("Scene") << "Failed to initialize mesh buffers";
+        return false;
+    }
+
+    // 3. Build mesh BLAS
+    if (!meshBlas_.buildAndSubmit(provider_, meshBuffers_))
+    {
+        Log::ERR("Scene") << "Failed to build mesh BLAS";
+        return false;
+    }
+
+    // 4. Build Mesh TLAS (separate from Gaussian TLAS)
+    auto meshTLASInstances = buildMeshTLASInstances();
+    if (!meshTlas_.buildAndSubmit(provider_, meshTLASInstances))
+    {
+        Log::ERR("Scene") << "Failed to build mesh TLAS";
+        return false;
+    }
+
+    // 5. Update descriptors (Mesh TLAS + mesh buffer bindings)
+    renderer.markDescriptorsDirty();
+    renderer.updateDescriptors(tlas, gaussianParticleBuffers,
+                               &meshTlas_, &meshBuffers_);
+
+    // 6. Update SceneBounds UBO (meshCount)
+    SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+    renderer.updateSceneBounds(boundsUBO);
+
+    return true;
+}
+
+
+std::vector<MeshTLASInstance> GRTScene::buildMeshTLASInstances() const
+{
+    std::vector<MeshTLASInstance> result;
+    result.reserve(meshInstances_.size());
+
+    for (uint32_t i = 0; i < static_cast<uint32_t>(meshInstances_.size()); ++i)
+    {
+        MeshTLASInstance inst;
+        inst.blasAddress = meshBlas_.getDeviceAddress(i);
+        inst.transform   = meshInstances_[i].transform;
+        inst.meshIndex   = i;
+        result.push_back(inst);
+    }
+
+    return result;
+}
+
+
+void GRTScene::setReflectionEnabled(bool enabled)
+{
+    if (reflectionEnabled_ != enabled)
+    {
+        reflectionEnabled_ = enabled;
+        if (initialized)
+        {
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+    }
+}
+
+
+void GRTScene::setMaxBounces(uint32_t bounces)
+{
+    if (maxBounces_ != bounces)
+    {
+        maxBounces_ = bounces;
+        if (initialized)
+        {
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+    }
+}
+
+
 void GRTScene::computeSceneBounds()
 {
     if (gaussianParticleData.particles.empty())
@@ -369,6 +522,7 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
 {
     SceneBoundsUBO ubo{};
 
+    // Existing fields
     ubo.minBound     = minBound;
     ubo.tMin         = 0.001f;
     ubo.maxBound     = maxBound;
@@ -377,6 +531,12 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
     ubo.renderMode   = renderMode_;
     ubo.shDegree     = shDegree_;
     ubo.kernelDegree = kernelDegree_;
+
+    // Reflection parameters
+    ubo.enableReflection = reflectionEnabled_ ? 1 : 0;
+    ubo.maxBounces       = maxBounces_;
+    ubo.meshCount        = static_cast<uint32_t>(meshInstances_.size());
+    ubo._pad0            = 0;
 
     return ubo;
 }

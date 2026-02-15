@@ -198,7 +198,54 @@ void ImGuiManager::showRightPanel()
             // Mesh Models
             if (ImGui::TreeNode("Mesh Models"))
             {
-                ImGui::Button("teapot.obj", ImVec2(-1.0f, 0.0f));
+                // Teapot: [Load] button + per-instance [X] remove buttons
+                uint32_t meshCount = scene_ ? scene_->getMeshCount() : 0;
+
+                float availWidth    = ImGui::GetContentRegionAvail().x;
+                float buttonSpacing = ImGui::GetStyle().ItemSpacing.x;
+                float removeWidth   = ImGui::CalcTextSize("X").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+
+                if (meshCount == 0)
+                {
+                    // No meshes — show load button
+                    if (ImGui::Button("teapot.obj", ImVec2(-1.0f, 0.0f)))
+                    {
+                        insertTeapot_ = true;
+                    }
+                }
+                else
+                {
+                    // Show each inserted mesh with a remove button
+                    const auto& meshes = scene_->getMeshInstances();
+                    for (uint32_t i = 0; i < meshCount; ++i)
+                    {
+                        ImGui::PushID(static_cast<int>(i));
+
+                        // Mesh name label
+                        float labelWidth = availWidth - removeWidth - buttonSpacing;
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+                        ImGui::Button(meshes[i].name.c_str(), ImVec2(labelWidth, 0.0f));
+                        ImGui::PopStyleColor();
+                        
+                        // Remove button
+                        ImGui::SameLine(0.0f, buttonSpacing);
+                        if (ImGui::Button("X", ImVec2(removeWidth, 0.0f)))
+                        {
+                            removeMeshIndex_ = static_cast<int>(i);
+                        }
+
+                        ImGui::PopID();
+
+                        ImGui::Spacing();
+                    }
+
+                    // Add more button
+                    if (ImGui::Button("+ teapot.obj", ImVec2(-1.0f, 0.0f)))
+                    {
+                        insertTeapot_ = true;
+                    }
+                }
+
                 ImGui::TreePop();
             }
         }
@@ -350,6 +397,28 @@ void ImGuiManager::showRightPanel()
             {
                 ImGui::EndDisabled();
                 ImGui::TextDisabled("No SH data in scene");
+            }
+
+            // Reflection
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Text("Reflection");
+            ImGui::Spacing();
+
+            if (ImGui::Checkbox("Enable##Reflection", &reflectEnabled_))
+            {
+                reflectEnabledChanged_ = true;
+            }
+
+            if (reflectEnabled_)
+            {
+                ImGui::Spacing();
+                ImGui::SliderInt("Max Bounces", &maxBounces_, 1, 3);
+                if (ImGui::IsItemDeactivatedAfterEdit())
+                {
+                    maxBouncesChanged_ = true;
+                }
             }
         }
     }

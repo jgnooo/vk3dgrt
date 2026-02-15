@@ -5,6 +5,8 @@
 #include "buffers.h"
 #include "tlas.h"
 #include "blas.h"
+#include "mesh-buffers.h"
+#include "mesh-tlas.h"
 #include "rt-descriptor-set.h"
 
 #include "vulkan/vkcontext.h"
@@ -55,6 +57,7 @@ constexpr uint32_t RENDER_MODE_SPLAT    = 2;  // Splat visualization
 
 struct SceneBoundsUBO
 {
+    // --- Existing fields (48 bytes) ---
     glm::vec3 minBound;          // Minimum corner of scene AABB
     float     tMin;              // Minimum ray parameter
     glm::vec3 maxBound;          // Maximum corner of scene AABB
@@ -63,10 +66,16 @@ struct SceneBoundsUBO
     uint32_t  renderMode;        // 0: GS, 1: Point, 2: Splat
     uint32_t  shDegree;          // SH evaluation degree (0=off, 1-3)
     uint32_t  kernelDegree;      // Kernel degree: 1=standard (n=1), 2=generalized (n=2)
+
+    // --- Reflection parameters (16 bytes) ---
+    uint32_t  enableReflection = 0;   // 0: disabled, 1: enabled
+    uint32_t  maxBounces       = 1;   // Maximum reflection bounces (1-3)
+    uint32_t  meshCount        = 0;   // Number of inserted meshes
+    uint32_t  _pad0            = 0;
 };
 
 
-static_assert(sizeof(SceneBoundsUBO) == 48, "SceneBoundsUBO must match GLSL SceneBounds size");
+static_assert(sizeof(SceneBoundsUBO) == 64, "SceneBoundsUBO must match GLSL SceneBounds size");
 
 
 class Renderer
@@ -89,6 +98,7 @@ class Renderer
     ShaderModule missShader;
     ShaderModule closestHitShader;
     ShaderModule anyHitShader;
+    ShaderModule meshClosestHitShader;
 
     ShaderBindingTable sbt;
 
@@ -111,7 +121,10 @@ public:
 
     void cleanup(VkContext* context);
 
-    bool updateDescriptors(const TLAS& tlas, const GaussianParticleBuffers& gaussianParticleBuffers);
+    bool updateDescriptors(const TLAS& tlas,
+                           const GaussianParticleBuffers& gaussianParticleBuffers,
+                           const MeshTLAS* meshTlas       = nullptr,
+                           const MeshBuffers* meshBuffers = nullptr);
     void updateCamera(const CameraPushConstants& camera);
     void updateSceneBounds(const SceneBoundsUBO& bounds);
 

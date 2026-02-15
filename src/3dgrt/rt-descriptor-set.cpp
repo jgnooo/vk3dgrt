@@ -31,34 +31,58 @@ bool RayTraceDescriptorSet::initialize(VkContext* context)
         return false;
     }
 
+    // Create dummy buffer for placeholder bindings (4,5,6) when no mesh is present
+    dummyBuffer_.create(ctx_, 32, BufferUsage::STORAGE, false);
+
     return true;
 }
 
 
 void RayTraceDescriptorSet::cleanup(VkDevice device)
 {
+    if (ctx_)
+    {
+        dummyBuffer_.cleanup(ctx_->getAllocator());
+    }
+
     allocator_.cleanup(device);
     layout_.cleanup(device);
 
-    descriptorSet_    = VK_NULL_HANDLE;
-    ctx_              = nullptr;
-    dirty_            = true;
-    cachedTlasHandle_ = VK_NULL_HANDLE;
-    boundTlas_        = VK_NULL_HANDLE;
-    boundOutputView_  = VK_NULL_HANDLE;
-    boundSceneBounds_ = VK_NULL_HANDLE;
+    descriptorSet_        = VK_NULL_HANDLE;
+    dirty_                = true;
+    cachedTlasHandle_     = VK_NULL_HANDLE;
+    boundTlas_            = VK_NULL_HANDLE;
+    boundOutputView_      = VK_NULL_HANDLE;
+    boundSceneBounds_     = VK_NULL_HANDLE;
+    cachedMeshTlasHandle_ = VK_NULL_HANDLE;
+    boundMeshTlas_        = VK_NULL_HANDLE;
+    boundMeshVertices_    = VK_NULL_HANDLE;
+    boundMeshIndices_     = VK_NULL_HANDLE;
+    boundMeshMaterials_   = VK_NULL_HANDLE;
+    ctx_                  = nullptr;
 }
 
 
 bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
                                    VkImageView outputImageView,
                                    VkBuffer sceneBoundsBuffer,
-                                   VkDeviceSize sceneBoundsSize)
+                                   VkDeviceSize sceneBoundsSize,
+                                   VkAccelerationStructureKHR meshTlas,
+                                   VkBuffer meshVertexBuffer,
+                                   VkDeviceSize meshVertexSize,
+                                   VkBuffer meshIndexBuffer,
+                                   VkDeviceSize meshIndexSize,
+                                   VkBuffer meshMaterialBuffer,
+                                   VkDeviceSize meshMaterialSize)
 {
     // Detect resource changes
-    bool resourcesChanged = (boundTlas_        != tlas)             ||
-                            (boundOutputView_  != outputImageView)  ||
-                            (boundSceneBounds_ != sceneBoundsBuffer);
+    bool resourcesChanged = (boundTlas_         != tlas)              ||
+                            (boundOutputView_   != outputImageView)   ||
+                            (boundSceneBounds_  != sceneBoundsBuffer) ||
+                            (boundMeshTlas_     != meshTlas)          ||
+                            (boundMeshVertices_ != meshVertexBuffer)  ||
+                            (boundMeshIndices_  != meshIndexBuffer)   ||
+                            (boundMeshMaterials_ != meshMaterialBuffer);
 
     if (resourcesChanged)
     {
@@ -72,18 +96,23 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
 
     VkDevice device = ctx_->getDevice();
 
-    // Cache TLAS handle (must stay alive during vkUpdateDescriptorSets)
-    cachedTlasHandle_ = tlas;
+    // Cache TLAS handles (must stay alive during vkUpdateDescriptorSets)
+    cachedTlasHandle_     = tlas;
+    cachedMeshTlasHandle_ = meshTlas;
 
     // Update tracking
-    boundTlas_        = tlas;
-    boundOutputView_  = outputImageView;
-    boundSceneBounds_ = sceneBoundsBuffer;
+    boundTlas_           = tlas;
+    boundOutputView_     = outputImageView;
+    boundSceneBounds_    = sceneBoundsBuffer;
+    boundMeshTlas_       = meshTlas;
+    boundMeshVertices_   = meshVertexBuffer;
+    boundMeshIndices_    = meshIndexBuffer;
+    boundMeshMaterials_  = meshMaterialBuffer;
 
     // Prepare writes
     std::vector<VkWriteDescriptorSet> writes;
 
-    // Binding 0: TLAS
+    // Binding 0: Gaussian TLAS
     VkWriteDescriptorSetAccelerationStructureKHR tlasWrite{
         .sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
         .accelerationStructureCount = 1,
@@ -136,6 +165,85 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
         .pBufferInfo     = &sceneBoundsBufferInfo
     };
     writes.push_back(sceneBoundsDescriptor);
+
+    // Binding 3: Mesh TLAS (use Gaussian TLAS as placeholder when no mesh)
+    // Vulkan requires all statically-used descriptors to be valid,
+    // even if runtime control flow never accesses them (meshCount==0).
+    cachedMeshTlasHandle_ = (meshTlas != VK_NULL_HANDLE) ? meshTlas : tlas;
+
+    VkWriteDescriptorSetAccelerationStructureKHR meshTlasWrite{
+        .sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+        .accelerationStructureCount = 1,
+        .pAccelerationStructures    = &cachedMeshTlasHandle_
+    };
+
+    VkWriteDescriptorSet meshTlasDescriptor{
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext           = &meshTlasWrite,
+        .dstSet          = descriptorSet_,
+        .dstBinding      = 3,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR
+    };
+    writes.push_back(meshTlasDescriptor);
+
+    // Binding 4,5,6: Mesh Vertex/Index/Material Buffers
+    // Use dummy buffer as placeholder when no mesh buffers are present
+    VkBuffer  actualVertexBuf   = (meshVertexBuffer   != VK_NULL_HANDLE) ? meshVertexBuffer   : dummyBuffer_.buffer;
+    VkBuffer  actualIndexBuf    = (meshIndexBuffer     != VK_NULL_HANDLE) ? meshIndexBuffer    : dummyBuffer_.buffer;
+    VkBuffer  actualMaterialBuf = (meshMaterialBuffer  != VK_NULL_HANDLE) ? meshMaterialBuffer : dummyBuffer_.buffer;
+    VkDeviceSize actualVertexSize   = (meshVertexBuffer   != VK_NULL_HANDLE) ? meshVertexSize   : dummyBuffer_.size;
+    VkDeviceSize actualIndexSize    = (meshIndexBuffer     != VK_NULL_HANDLE) ? meshIndexSize    : dummyBuffer_.size;
+    VkDeviceSize actualMaterialSize = (meshMaterialBuffer  != VK_NULL_HANDLE) ? meshMaterialSize : dummyBuffer_.size;
+
+    VkDescriptorBufferInfo meshVertexInfo{
+        .buffer = actualVertexBuf,
+        .offset = 0,
+        .range  = actualVertexSize
+    };
+    VkWriteDescriptorSet meshVertexDescriptor{
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet          = descriptorSet_,
+        .dstBinding      = 4,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        .pBufferInfo     = &meshVertexInfo
+    };
+    writes.push_back(meshVertexDescriptor);
+
+    VkDescriptorBufferInfo meshIndexInfo{
+        .buffer = actualIndexBuf,
+        .offset = 0,
+        .range  = actualIndexSize
+    };
+    VkWriteDescriptorSet meshIndexDescriptor{
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet          = descriptorSet_,
+        .dstBinding      = 5,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        .pBufferInfo     = &meshIndexInfo
+    };
+    writes.push_back(meshIndexDescriptor);
+
+    VkDescriptorBufferInfo meshMaterialInfo{
+        .buffer = actualMaterialBuf,
+        .offset = 0,
+        .range  = actualMaterialSize
+    };
+    VkWriteDescriptorSet meshMaterialDescriptor{
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet          = descriptorSet_,
+        .dstBinding      = 6,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        .pBufferInfo     = &meshMaterialInfo
+    };
+    writes.push_back(meshMaterialDescriptor);
 
     // Update
     vkUpdateDescriptorSets(
@@ -194,7 +302,7 @@ void RayTraceDescriptorSet::bind(VkCommandBuffer cmd, VkPipelineLayout layout) c
 bool RayTraceDescriptorSet::createLayout()
 {
     std::vector<DescriptorSetLayoutBinding> bindings = {
-        // Binding 0: TLAS
+        // Binding 0: Gaussian TLAS
         {
             .binding    = 0,
             .type       = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
@@ -208,12 +316,40 @@ bool RayTraceDescriptorSet::createLayout()
             .count      = 1,
             .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR
         },
-        // Binding 2: Scene Bounds UBO (Gaussian/SH buffers moved to BDA push constants)
+        // Binding 2: Scene Bounds UBO
         {
             .binding    = 2,
             .type       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .count      = 1,
             .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR
+        },
+        // Binding 3: Mesh TLAS (separate acceleration structure for reflection meshes)
+        {
+            .binding    = 3,
+            .type       = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+            .count      = 1,
+            .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR
+        },
+        // Binding 4: Mesh Vertex Buffer
+        {
+            .binding    = 4,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .count      = 1,
+            .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+        },
+        // Binding 5: Mesh Index Buffer
+        {
+            .binding    = 5,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .count      = 1,
+            .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+        },
+        // Binding 6: Mesh Material Buffer
+        {
+            .binding    = 6,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .count      = 1,
+            .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         }
     };
 
@@ -226,9 +362,10 @@ bool RayTraceDescriptorSet::createLayout()
 bool RayTraceDescriptorSet::createPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes = {
-        { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              1 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1 }
+        { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 2 },  // binding 0 (Gaussian) + binding 3 (Mesh)
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              1 },  // binding 1
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1 },  // binding 2
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             3 }   // binding 4,5,6
     };
 
     allocator_.create(ctx_->getDevice(), 1, poolSizes);

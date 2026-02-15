@@ -7,6 +7,10 @@
 #include "renderer.h"
 #include "blas.h"
 #include "tlas.h"
+#include "mesh-data.h"
+#include "mesh-buffers.h"
+#include "mesh-blas.h"
+#include "mesh-tlas.h"
 #include "gui/camera.h"
 
 #include "scene.h"
@@ -37,6 +41,16 @@ class GRTScene : public Scene
     
     BLAS  blas;
     TLAS  tlas;
+
+    // Mesh resources (Dual TLAS: separate from Gaussian TLAS)
+    std::vector<MeshInstance> meshInstances_;
+    MeshBuffers               meshBuffers_;
+    MeshBLAS                  meshBlas_;
+    MeshTLAS                  meshTlas_;
+
+    // Reflection state
+    bool     reflectionEnabled_ = false;
+    uint32_t maxBounces_        = 1;
 
     // Renderer
     Renderer renderer;
@@ -119,10 +133,26 @@ public:
 
     bool hasSHData() const { return gaussianParticleBuffers.hasSHCoefficients(); }
 
+    // Mesh management
+    bool addMesh(MeshPreset preset,
+                 const glm::vec3& position = glm::vec3(0.0f),
+                 const glm::vec3& scale    = glm::vec3(1.0f));
+    bool removeMesh(uint32_t index);
+    uint32_t getMeshCount() const { return static_cast<uint32_t>(meshInstances_.size()); }
+    const std::vector<MeshInstance>& getMeshInstances() const { return meshInstances_; }
+
+    // Reflection settings
+    void setReflectionEnabled(bool enabled);
+    bool isReflectionEnabled() const { return reflectionEnabled_; }
+    void setMaxBounces(uint32_t bounces);
+    uint32_t getMaxBounces() const { return maxBounces_; }
+
 private:
     void computeSceneBounds();
     CameraUBO buildCameraUBO() const;
     SceneBoundsUBO buildSceneBoundsUBO() const;
+    bool rebuildMeshResources();
+    std::vector<MeshTLASInstance> buildMeshTLASInstances() const;
 };
 
 }   // namespace vk3dgrt

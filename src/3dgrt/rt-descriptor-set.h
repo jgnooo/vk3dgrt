@@ -37,6 +37,16 @@ class RayTraceDescriptorSet
     VkImageView                boundOutputView_  = VK_NULL_HANDLE;
     VkBuffer                   boundSceneBounds_ = VK_NULL_HANDLE;
 
+    // Mesh resource tracking (binding 3-6)
+    VkAccelerationStructureKHR cachedMeshTlasHandle_ = VK_NULL_HANDLE;
+    VkAccelerationStructureKHR boundMeshTlas_        = VK_NULL_HANDLE;
+    VkBuffer                   boundMeshVertices_    = VK_NULL_HANDLE;
+    VkBuffer                   boundMeshIndices_     = VK_NULL_HANDLE;
+    VkBuffer                   boundMeshMaterials_   = VK_NULL_HANDLE;
+
+    // Dummy buffer for unbound mesh descriptors (bindings 4,5,6 placeholder)
+    AllocatedBuffer dummyBuffer_;
+
 public:
     RayTraceDescriptorSet()  = default;
     ~RayTraceDescriptorSet() = default;
@@ -54,7 +64,14 @@ public:
     bool update(VkAccelerationStructureKHR tlas,
                 VkImageView outputImageView,
                 VkBuffer sceneBoundsBuffer,
-                VkDeviceSize sceneBoundsSize);
+                VkDeviceSize sceneBoundsSize,
+                VkAccelerationStructureKHR meshTlas    = VK_NULL_HANDLE,
+                VkBuffer meshVertexBuffer              = VK_NULL_HANDLE,
+                VkDeviceSize meshVertexSize            = 0,
+                VkBuffer meshIndexBuffer               = VK_NULL_HANDLE,
+                VkDeviceSize meshIndexSize             = 0,
+                VkBuffer meshMaterialBuffer            = VK_NULL_HANDLE,
+                VkDeviceSize meshMaterialSize          = 0);
 
     void updateOutputImage(VkImageView newImageView);
 

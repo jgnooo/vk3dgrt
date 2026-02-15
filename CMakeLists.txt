@@ -141,6 +141,7 @@ set(SHADER_SOURCES
     ${SHADER_SOURCE_DIR}/any-hit.rahit
     ${SHADER_SOURCE_DIR}/closest-hit.rchit
     ${SHADER_SOURCE_DIR}/miss.rmiss
+    ${SHADER_SOURCE_DIR}/mesh-closest-hit.rchit
 )
 
 # Include files (not compiled directly, but tracked for dependencies)

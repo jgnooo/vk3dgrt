@@ -108,6 +108,7 @@ void Renderer::cleanup(VkContext* context)
     missShader.cleanup(device);
     closestHitShader.cleanup(device);
     anyHitShader.cleanup(device);
+    meshClosestHitShader.cleanup(device);
 
     // Cleanup output image
     outputImage.cleanup(context);
@@ -126,7 +127,10 @@ void Renderer::cleanup(VkContext* context)
 }
 
 
-bool Renderer::updateDescriptors(const TLAS& tlas, const GaussianParticleBuffers& gaussianParticleBuffers)
+bool Renderer::updateDescriptors(const TLAS& tlas,
+                                 const GaussianParticleBuffers& gaussianParticleBuffers,
+                                 const MeshTLAS* meshTlas,
+                                 const MeshBuffers* meshBuffers)
 {
     if (!initialized)
     {
@@ -155,11 +159,39 @@ bool Renderer::updateDescriptors(const TLAS& tlas, const GaussianParticleBuffers
                                                       ? gaussianParticleBuffers.getSHBufferAddress()
                                                       : 0;
 
+    // Prepare mesh descriptor parameters (VK_NULL_HANDLE if no mesh)
+    VkAccelerationStructureKHR meshTlasHandle  = VK_NULL_HANDLE;
+    VkBuffer meshVertexBuffer                  = VK_NULL_HANDLE;
+    VkDeviceSize meshVertexSize                = 0;
+    VkBuffer meshIndexBuffer                   = VK_NULL_HANDLE;
+    VkDeviceSize meshIndexSize                 = 0;
+    VkBuffer meshMaterialBuffer                = VK_NULL_HANDLE;
+    VkDeviceSize meshMaterialSize              = 0;
+
+    if (meshTlas != nullptr && meshTlas->isBuilt() &&
+        meshBuffers != nullptr && meshBuffers->isInitialized())
+    {
+        meshTlasHandle    = meshTlas->getHandle();
+        meshVertexBuffer  = meshBuffers->getVertexBufferHandle();
+        meshVertexSize    = meshBuffers->getVertexBufferSize();
+        meshIndexBuffer   = meshBuffers->getIndexBufferHandle();
+        meshIndexSize     = meshBuffers->getIndexBufferSize();
+        meshMaterialBuffer = meshBuffers->getMaterialBufferHandle();
+        meshMaterialSize  = meshBuffers->getMaterialBufferSize();
+    }
+
     return rtDescriptorSet.update(
         tlas.getHandle(),
         outputImage.imageView,
         sceneBoundsUBO.buffer,
-        sizeof(SceneBoundsUBO)
+        sizeof(SceneBoundsUBO),
+        meshTlasHandle,
+        meshVertexBuffer,
+        meshVertexSize,
+        meshIndexBuffer,
+        meshIndexSize,
+        meshMaterialBuffer,
+        meshMaterialSize
     );
 }
 
@@ -446,15 +478,17 @@ bool Renderer::loadShaders(const std::string& shaderPath)
     try
     {
         // Shader file names (compiled SPIR-V)
-        std::string raygenFile = shaderPath + "ray-generation.rgen.spv";
-        std::string missFile   = shaderPath + "miss.rmiss.spv";
-        std::string chitFile   = shaderPath + "closest-hit.rchit.spv";
-        std::string ahitFile   = shaderPath + "any-hit.rahit.spv";
+        std::string raygenFile   = shaderPath + "ray-generation.rgen.spv";
+        std::string missFile     = shaderPath + "miss.rmiss.spv";
+        std::string chitFile     = shaderPath + "closest-hit.rchit.spv";
+        std::string ahitFile     = shaderPath + "any-hit.rahit.spv";
+        std::string meshChitFile = shaderPath + "mesh-closest-hit.rchit.spv";
 
         raygenShader.createFromFile(ctx->getDevice(), raygenFile);
         missShader.createFromFile(ctx->getDevice(), missFile);
         closestHitShader.createFromFile(ctx->getDevice(), chitFile);
         anyHitShader.createFromFile(ctx->getDevice(), ahitFile);
+        meshClosestHitShader.createFromFile(ctx->getDevice(), meshChitFile);
     }
     catch (const std::exception& e)
     {
@@ -493,10 +527,11 @@ bool Renderer::createPipeline()
     pipelineBuilder.init(ctx);
 
     // Add shader stages
-    uint32_t raygenIdx = pipelineBuilder.addRaygenShader(raygenShader.module);
-    uint32_t missIdx   = pipelineBuilder.addMissShader(missShader.module);
-    uint32_t chitIdx   = pipelineBuilder.addClosestHitShader(closestHitShader.module);
-    uint32_t ahitIdx   = pipelineBuilder.addAnyHitShader(anyHitShader.module);
+    uint32_t raygenIdx   = pipelineBuilder.addRaygenShader(raygenShader.module);
+    uint32_t missIdx     = pipelineBuilder.addMissShader(missShader.module);
+    uint32_t chitIdx     = pipelineBuilder.addClosestHitShader(closestHitShader.module);
+    uint32_t ahitIdx     = pipelineBuilder.addAnyHitShader(anyHitShader.module);
+    uint32_t meshChitIdx = pipelineBuilder.addClosestHitShader(meshClosestHitShader.module);
 
     // Add shader groups
     // Group 0: RayGen
@@ -505,14 +540,14 @@ bool Renderer::createPipeline()
     // Group 1: Miss
     pipelineBuilder.addMissGroup(missIdx);
 
-    // Group 2: Triangle Hit Group (Any-Hit only, Closest-Hit unused but required)
-    // For triangle geometry, we use TRIANGLES_HIT_GROUP_KHR
-    // anyHitShader is invoked for each intersection
-    // closestHitShader is skipped via ray flags (gl_RayFlagsSkipClosestHitShaderEXT)
+    // Group 2: Hit Group 0 — Gaussian (any-hit for sorting, closest-hit skipped via ray flags)
     pipelineBuilder.addHitGroup(chitIdx, ahitIdx, VK_SHADER_UNUSED_KHR);
 
+    // Group 3: Hit Group 1 — Mesh (closest-hit only, no any-hit needed)
+    pipelineBuilder.addHitGroup(meshChitIdx, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR);
+
     // Build pipeline
-    // maxRecursionDepth = 1 (no recursive ray tracing needed for 3DGRT)
+    // maxRecursionDepth = 1: raygen(depth 0) → hit/miss(depth 1), hit shaders don't trace recursively
     pipeline = pipelineBuilder.build(pipelineLayout, 1);
 
     if (pipeline == VK_NULL_HANDLE)
