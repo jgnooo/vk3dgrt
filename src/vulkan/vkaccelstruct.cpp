@@ -80,7 +80,8 @@ AccelerationStructure AccelerationStructureBuilder::buildBlas(VkCommandBuffer cm
                                                               uint32_t vertexStride,
                                                               uint32_t triangleCount,
                                                               VkFormat vertexFormat,
-                                                              VkBuildAccelerationStructureFlagsKHR flags)
+                                                              VkBuildAccelerationStructureFlagsKHR flags,
+                                                              VkGeometryFlagsKHR geometryFlags)
 {
     AccelerationStructure as;
 
@@ -99,7 +100,7 @@ AccelerationStructure AccelerationStructureBuilder::buildBlas(VkCommandBuffer cm
         .sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
         .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
         .geometry     = {.triangles = trianglesData},
-        .flags        = VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR  // Prevent duplicate Any-Hit per triangle
+        .flags        = geometryFlags
     };
 
     // Get build sizes

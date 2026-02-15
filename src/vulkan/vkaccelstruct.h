@@ -49,7 +49,8 @@ struct AccelerationStructureBuilder
                                     uint32_t vertexStride,
                                     uint32_t triangleCount,
                                     VkFormat vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
-                                    VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+                                    VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+                                    VkGeometryFlagsKHR geometryFlags = VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
 
     AccelerationStructure buildTlas(VkCommandBuffer cmdBuffer,
                                     const std::vector<AccelerationStructureInstance>& instances,
