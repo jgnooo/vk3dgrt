@@ -58,7 +58,7 @@ bool loadMeshFromOBJ(const std::string& filePath,
     {
         outVertices[i] = glm::vec3(
              attrib.vertices[i * 3 + 0],
-            -attrib.vertices[i * 3 + 1],
+             attrib.vertices[i * 3 + 1],
             -attrib.vertices[i * 3 + 2]
         );
     }

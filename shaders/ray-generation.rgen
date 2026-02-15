@@ -112,7 +112,7 @@ void main()
     // ════════════════════════════════════════════════════════
     //  Non-reflection path
     // ════════════════════════════════════════════════════════
-    if (sceneBounds.enableReflection == 0)
+    if (sceneBounds.enableReflection == 0 && sceneBounds.meshCount == 0)
     {
         float rayLastHitDist = max(0.0, tMin - T_EPSILON);
 
@@ -516,7 +516,11 @@ void main()
             break;
         }
 
-        if (meshPayload.materialType == MATERIAL_REFLECTIVE)
+        uint effectiveType = (sceneBounds.enableReflection > 0)
+                           ? MATERIAL_REFLECTIVE
+                           : MATERIAL_DIFFUSE;
+
+        if (effectiveType == MATERIAL_REFLECTIVE)
         {
             // Compute reflection direction
             vec3 reflDir = reflect(currentDirection, meshPayload.normal);
@@ -539,7 +543,7 @@ void main()
 
             // Continue to next bounce
         }
-        else if (meshPayload.materialType == MATERIAL_DIFFUSE)
+        else if (effectiveType == MATERIAL_DIFFUSE)
         {
             // Diffuse mesh: blend color and terminate
             radiance += meshPayload.color * transmittance;

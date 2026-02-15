@@ -27,8 +27,8 @@ MeshInstance createPresetMesh(MeshPreset preset,
                 break;
             }
 
-            mesh.material.type         = MeshMaterialType::REFLECTIVE;
-            mesh.material.color        = glm::vec3(0.8f, 0.8f, 0.9f);
+            mesh.material.type         = MeshMaterialType::DIFFUSE;
+            mesh.material.color        = glm::vec3(0.6f, 0.6f, 0.6f);
             mesh.material.reflectivity = 0.85f;
 
             mesh.transform = glm::translate(glm::mat4(1.0f), position)

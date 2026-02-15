@@ -20,7 +20,7 @@ enum class MeshMaterialType : uint32_t
 struct MeshMaterial
 {
     glm::vec3        color        = glm::vec3(0.8f);
-    MeshMaterialType type         = MeshMaterialType::REFLECTIVE;
+    MeshMaterialType type         = MeshMaterialType::DIFFUSE;
     float            reflectivity = 0.8f;
 };
 
