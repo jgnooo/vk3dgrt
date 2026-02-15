@@ -80,6 +80,47 @@ const float TRANSMITTANCE_THRESHOLD = 0.01;
 
 
 // --------------------------------------------------- //
+//  Material Type Constants
+// --------------------------------------------------- //
+#define MATERIAL_DIFFUSE     0
+#define MATERIAL_REFLECTIVE  1
+
+
+// --------------------------------------------------- //
+//  Reflection Constants
+// --------------------------------------------------- //
+#define MAX_BOUNCES               3
+#define MAX_REFLECTION_ITERATIONS 16
+
+
+// --------------------------------------------------- //
+//  MeshHitPayload - Payload for mesh ray hits (std430, 32B)
+// --------------------------------------------------- //
+struct MeshHitPayload
+{
+    vec3  normal;
+    float hitDist;
+    vec3  color;
+    uint  materialType;  // MATERIAL_DIFFUSE or MATERIAL_REFLECTIVE
+    float reflectivity;
+};
+
+
+// --------------------------------------------------- //
+//  MeshMaterialGPU - GPU material structure (std430, 32B)
+// --------------------------------------------------- //
+struct MeshMaterialGPU
+{
+    vec3  color;
+    uint  materialType;
+    float reflectivity;
+    float _pad0;
+    float _pad1;
+    float _pad2;
+};
+
+
+// --------------------------------------------------- //
 //  SceneBounds - AABB for scene extent
 // --------------------------------------------------- //
 struct SceneBounds
@@ -92,6 +133,11 @@ struct SceneBounds
     uint  renderMode;     // 0: GS, 1: Point, 2: Splat
     uint  shDegree;       // SH evaluation degree (0=off, 1-3)
     uint  kernelDegree;   // Kernel degree: 1=standard (n=1), 2=generalized (n=2)
+
+    uint enableReflection; // 1 to enable reflections, 0 to disable
+    uint maxBounces;       // Maximum number of reflection bounces
+    uint meshCount;        // Number of meshes in the scene
+    uint _pad;             // Padding for 16-byte alignment
 };
 
 
