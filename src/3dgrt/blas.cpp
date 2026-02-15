@@ -1,12 +1,13 @@
 #include "blas.h"
-
 #include "buffers.h"
+
 #include "log.h"
 
 #include "vulkan/vkprovider.h"
 #include "vulkan/vkerror.h"
 
 #include <glm/glm.hpp>
+
 
 namespace vk3dgrt {
 
