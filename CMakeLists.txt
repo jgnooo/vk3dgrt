@@ -65,6 +65,14 @@ add_library(tinyply INTERFACE)
 target_include_directories(tinyply INTERFACE ${TINYPLY_DIR}/source)
 # --------------------------------------------------------------------------- #
 
+# --------------------------------------------------------------------------- #
+# tinyobjloader (OBJ file parser)
+# --------------------------------------------------------------------------- #
+set(TINYOBJLOADER_DIR dependencies/tinyobjloader)
+add_library(tinyobjloader INTERFACE)
+target_include_directories(tinyobjloader INTERFACE ${TINYOBJLOADER_DIR})
+# --------------------------------------------------------------------------- #
+
 file(GLOB PROJECT_VULKAN_SOURCES CONFIGURE_DEPENDS src/vulkan/*.h src/vulkan/*.cpp)
 file(GLOB PROJECT_3DGRT_SOURCES CONFIGURE_DEPENDS src/3dgrt/*.h src/3dgrt/*.cpp)
 file(GLOB PROJECT_GUI_SOURCES CONFIGURE_DEPENDS src/gui/*.h src/gui/*.cpp)
@@ -96,6 +104,7 @@ target_link_libraries(${PROJECT_NAME}
         vma
         glm
         tinyply
+        tinyobjloader
 )
 
 add_definitions(
