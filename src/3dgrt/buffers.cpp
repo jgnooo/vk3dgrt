@@ -4,6 +4,7 @@
 
 #include "vulkan/vkerror.h"
 
+
 namespace vk3dgrt {
 
 bool GaussianParticleBuffers::initialize(VkContext* context,
