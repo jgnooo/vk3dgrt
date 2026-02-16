@@ -126,11 +126,11 @@ vec3 evaluateParticleSH(uint particleId, vec3 viewDir, int maxDegree)
     // ── Degree 3 (7 coefficients) ──
     result += SH_C3[0] * y * (3.0 * xx - yy) * fetchSHCoeff(shBase, 9);
     result += SH_C3[1] * xy * z * fetchSHCoeff(shBase, 10);
-    result += SH_C3[2] * y * (4.0 * zz - xx - yy)- * fetchSHCoeff(shBase, 11);
+    result += SH_C3[2] * y * (4.0 * zz - xx - yy) * fetchSHCoeff(shBase, 11);
     result += SH_C3[3] * z * (2.0 * zz - 3.0 * xx - 3.0 * yy) * fetchSHCoeff(shBase, 12);
-    result += SH_C3[4] * x * (4.0 * zz - xx - yy)- * fetchSHCoeff(shBase, 13);
+    result += SH_C3[4] * x * (4.0 * zz - xx - yy) * fetchSHCoeff(shBase, 13);
     result += SH_C3[5] * z * (xx - yy) * fetchSHCoeff(shBase, 14);
-    result += SH_C3[6] * x * (xx - 3.0 * yy) * fetchSHCoeff(shBase, 15);
+    result += SH_C3[6] * x * (xx - 3.0 * yy)* fetchSHCoeff(shBase, 15);
 
     return max(result, vec3(0.0));
 }
