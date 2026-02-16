@@ -9,6 +9,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <random>
 #include <stdexcept>
 #include <vector>
 
@@ -383,7 +384,11 @@ void VkEngine::draw()
         auto* gs = sceneManager.getGRTScene();
         if (gs)
         {
-            gs->addMesh(vk3dgrt::MeshPreset::TEAPOT);
+            static std::mt19937 rng(std::random_device{}());
+            static std::uniform_real_distribution<float> dist(-7.0f, 7.0f);
+
+            glm::vec3 randomPos(dist(rng), dist(rng), dist(rng));
+            gs->addMesh(vk3dgrt::MeshPreset::TEAPOT, randomPos);
         }
         imguiManager.clearInsertTeapot();
     }
