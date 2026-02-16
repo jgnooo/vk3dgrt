@@ -56,30 +56,83 @@ const float MIN_PARTICLE_KERNEL_DENSITY = 0.0113;      // min_response (official
 const float MIN_PARTICLE_ALPHA          = 0.00392157;  // min_alpha = 1/255
 
 
+// Fetch a single vec3 SH coefficient from packed fp16 buffer.
+// Each coefficient = 3 fp16 (RGB) packed into uint32 pairs.
+// shIdx must be a compile-time literal for optimal codegen
+// (compiler resolves fi/2, fi%2 at compile time → no branch).
+vec3 fetchSHCoeff(uint shBase, int shIdx)
+{
+    int fi = shIdx * 3;
+    vec2 p0 = unpackHalf2x16(shBuffer.data[shBase + fi / 2]);
+    vec2 p1 = unpackHalf2x16(shBuffer.data[shBase + (fi + 1) / 2]);
+    vec2 p2 = unpackHalf2x16(shBuffer.data[shBase + (fi + 2) / 2]);
+    return vec3(
+        (fi % 2 == 0)       ? p0.x : p0.y,
+        ((fi + 1) % 2 == 0) ? p1.x : p1.y,
+        ((fi + 2) % 2 == 0) ? p2.x : p2.y
+    );
+}
+
+
+// Streaming SH evaluation: no local array, reads each coefficient on demand.
+// Register usage: vec3 x 1 (reused) instead of vec3 x 16.
+// Only reads coefficients needed for the given maxDegree.
 vec3 evaluateParticleSH(uint particleId, vec3 viewDir, int maxDegree)
 {
-    const int SH_COUNT = 16;
-    vec3 sh[16];
-
-    // Unpack fp16 SH coefficients: each uint32 holds 2 fp16 values
-    // Layout: 3 floats per coefficient (RGB), packed as fp16 pairs
-    // 24 uint32 = 48 fp16 = 16 coeffs * 3 channels
     uint shBase = particleId * 24;
 
-    for (int si = 0; si < SH_COUNT; si++)
+    vec3  d = normalize(viewDir);
+    float x = d.x;
+    float y = d.y;
+    float z = d.z;
+
+    // ── Degree 0 (1 coefficient) ──
+    vec3 result = vec3(0.5) + SH_C0 * fetchSHCoeff(shBase, 0);
+
+    if (maxDegree < 1)
     {
-        int fi = si * 3;
-        vec2 p0 = unpackHalf2x16(shBuffer.data[shBase + fi / 2]);
-        vec2 p1 = unpackHalf2x16(shBuffer.data[shBase + (fi + 1) / 2]);
-        vec2 p2 = unpackHalf2x16(shBuffer.data[shBase + (fi + 2) / 2]);
-        sh[si] = vec3(
-            (fi % 2 == 0)       ? p0.x : p0.y,
-            ((fi + 1) % 2 == 0) ? p1.x : p1.y,
-            ((fi + 2) % 2 == 0) ? p2.x : p2.y
-        );
+        return max(result, vec3(0.0));
     }
 
-    return evaluateSHWithDegree(viewDir, sh, maxDegree);
+    // ── Degree 1 (3 coefficients) ──
+    result += SH_C1 * (-y) * fetchSHCoeff(shBase, 1);
+    result += SH_C1 *   z  * fetchSHCoeff(shBase, 2);
+    result += SH_C1 * (-x) * fetchSHCoeff(shBase, 3);
+
+    if (maxDegree < 2)
+    {
+        return max(result, vec3(0.0));
+    }
+
+    // ── Degree 2 (5 coefficients) ──
+    float xx = x * x;
+    float yy = y * y;
+    float zz = z * z;
+    float xy = x * y;
+    float xz = x * z;
+    float yz = y * z;
+
+    result += SH_C2[0] * xy * fetchSHCoeff(shBase, 4);
+    result += SH_C2[1] * yz * fetchSHCoeff(shBase, 5);
+    result += SH_C2[2] * (2.0 * zz - xx - yy) * fetchSHCoeff(shBase, 6);
+    result += SH_C2[3] * xz * fetchSHCoeff(shBase, 7);
+    result += SH_C2[4] * (xx - yy) * fetchSHCoeff(shBase, 8);
+
+    if (maxDegree < 3)
+    {
+        return max(result, vec3(0.0));
+    }
+
+    // ── Degree 3 (7 coefficients) ──
+    result += SH_C3[0] * y * (3.0 * xx - yy) * fetchSHCoeff(shBase, 9);
+    result += SH_C3[1] * xy * z * fetchSHCoeff(shBase, 10);
+    result += SH_C3[2] * y * (4.0 * zz - xx - yy)- * fetchSHCoeff(shBase, 11);
+    result += SH_C3[3] * z * (2.0 * zz - 3.0 * xx - 3.0 * yy) * fetchSHCoeff(shBase, 12);
+    result += SH_C3[4] * x * (4.0 * zz - xx - yy)- * fetchSHCoeff(shBase, 13);
+    result += SH_C3[5] * z * (xx - yy) * fetchSHCoeff(shBase, 14);
+    result += SH_C3[6] * x * (xx - 3.0 * yy) * fetchSHCoeff(shBase, 15);
+
+    return max(result, vec3(0.0));
 }
 
 
