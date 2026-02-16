@@ -223,17 +223,10 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
 
     if (dataLoaded)
     {
-        // Compute mean center of all positions (like nvpro's getCenter)
-        glm::vec3 meanCenter(0.0f);
-        for (const auto& particle : gaussianParticleData.particles)
-        {
-            meanCenter += particle.position;
-        }
-        meanCenter /= static_cast<float>(gaussianParticleData.particles.size());
-
-        // Fixed camera position like nvpro: eye=(0, 0, 2), center=mean, up=(0, 1, 0)
+        // Fixed default camera like nvpro reference:
+        // eye=(0, 0, 2), center=(0, 0, 0), up=(0, 1, 0)
         camera.position = glm::vec3(0.0f, 0.0f, 2.0f);
-        camera.target   = meanCenter;
+        camera.target   = glm::vec3(0.0f, 0.0f, 0.0f);
         camera.up       = glm::vec3(0.0f, 1.0f, 0.0f);
 
         // Initialize controller (syncs orbit params from camera state)
