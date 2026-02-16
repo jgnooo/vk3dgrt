@@ -137,8 +137,54 @@ struct SceneBounds
     uint enableReflection; // 1 to enable reflections, 0 to disable
     uint maxBounces;       // Maximum number of reflection bounces
     uint meshCount;        // Number of meshes in the scene
-    uint _pad;             // Padding for 16-byte alignment
+    uint _pad0;            // Padding for 16-byte alignment
+
+    // Lighting parameters (must match SceneBoundsUBO layout)
+    uint  enableLighting;
+    uint  enableSpecular;
+    float specularShininess;
+    uint  _pad1;
+
+    vec3  lightDir;
+    float lightIntensity;
+
+    vec3  lightColor;
+    float ambientIntensity;
+
+    vec3  ambientColor;
+    uint  _pad2;
 };
+
+
+// --------------------------------------------------- //
+//  Lighting - Lambertian diffuse + Blinn-Phong specular
+// --------------------------------------------------- //
+vec3 computeLighting(vec3 baseColor, vec3 N, vec3 viewDir,
+                     vec3 lDir, vec3 lColor, float lIntensity,
+                     vec3 aColor, float aIntensity,
+                     bool specular, float shininess)
+{
+    vec3 L = normalize(-lDir);
+    vec3 V = normalize(-viewDir);
+
+    // Ambient
+    vec3 ambient = aColor * aIntensity * baseColor;
+
+    // Lambertian diffuse
+    float NdotL  = max(dot(N, L), 0.0);
+    vec3  diffuse = lColor * lIntensity * NdotL * baseColor;
+
+    // Blinn-Phong specular
+    vec3 spec = vec3(0.0);
+    if (specular && NdotL > 0.0)
+    {
+        vec3  H     = normalize(L + V);
+        float NdotH = max(dot(N, H), 0.0);
+        spec = lColor * lIntensity * pow(NdotH, shininess);
+    }
+
+    return ambient + diffuse + spec;
+}
 
 
 #endif // VK3DGRT_COMMON_GLSL

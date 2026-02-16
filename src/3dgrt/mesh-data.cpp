@@ -32,7 +32,7 @@ MeshInstance createPresetMesh(MeshPreset preset,
             mesh.material.reflectivity = 0.85f;
 
             mesh.transform = glm::translate(glm::mat4(1.0f), position)
-                           * glm::scale(glm::mat4(1.0f), scale);
+                           * glm::scale(glm::mat4(0.3f), scale);
         }
     }
 

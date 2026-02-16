@@ -72,10 +72,25 @@ struct SceneBoundsUBO
     uint32_t  maxBounces       = 1;   // Maximum reflection bounces (1-3)
     uint32_t  meshCount        = 0;   // Number of inserted meshes
     uint32_t  _pad0            = 0;
+
+    // --- Lighting parameters (64 bytes) ---
+    uint32_t  enableLighting    = 0;      // 0: disabled, 1: enabled
+    uint32_t  enableSpecular    = 0;      // 0: disabled, 1: enabled
+    float     specularShininess = 32.0f;  // Blinn-Phong shininess exponent
+    uint32_t  _pad1             = 0;
+
+    glm::vec3 lightDir          = glm::vec3(0.0f, -1.0f, 0.0f);  // Normalized direction
+    float     lightIntensity    = 1.0f;
+
+    glm::vec3 lightColor        = glm::vec3(1.0f);
+    float     ambientIntensity  = 0.2f;
+
+    glm::vec3 ambientColor      = glm::vec3(1.0f);
+    uint32_t  _pad2             = 0;
 };
 
 
-static_assert(sizeof(SceneBoundsUBO) == 64, "SceneBoundsUBO must match GLSL SceneBounds size");
+static_assert(sizeof(SceneBoundsUBO) == 128, "SceneBoundsUBO must match GLSL SceneBounds size");
 
 
 class Renderer

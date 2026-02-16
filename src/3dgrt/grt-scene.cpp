@@ -538,6 +538,18 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
     ubo.meshCount        = static_cast<uint32_t>(meshInstances_.size());
     ubo._pad0            = 0;
 
+    // Lighting parameters (always enabled with default values)
+    ubo.enableLighting    = 1;
+    ubo.enableSpecular    = 1;
+    ubo.specularShininess = 32.0f;
+    ubo._pad1             = 0;
+    ubo.lightDir          = glm::vec3(0.0f, -1.0f, 0.0f);
+    ubo.lightIntensity    = 1.0f;
+    ubo.lightColor        = glm::vec3(1.0f);
+    ubo.ambientIntensity  = 0.2f;
+    ubo.ambientColor      = glm::vec3(1.0f);
+    ubo._pad2             = 0;
+
     return ubo;
 }
 

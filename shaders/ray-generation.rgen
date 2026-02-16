@@ -516,6 +516,14 @@ void main()
             break;
         }
 
+        // Compute lit color (always apply default lighting)
+        vec3 litColor = computeLighting(
+            meshPayload.color, meshPayload.normal, currentDirection,
+            sceneBounds.lightDir, sceneBounds.lightColor, sceneBounds.lightIntensity,
+            sceneBounds.ambientColor, sceneBounds.ambientIntensity,
+            sceneBounds.enableSpecular > 0, sceneBounds.specularShininess
+        );
+
         uint effectiveType = (sceneBounds.enableReflection > 0)
                            ? MATERIAL_REFLECTIVE
                            : MATERIAL_DIFFUSE;
@@ -536,7 +544,7 @@ void main()
 
             // Mesh surface's own diffuse contribution (1 - reflectivity)
             float diffuseWeight = (1.0 - meshPayload.reflectivity) * transmittance;
-            radiance += meshPayload.color * diffuseWeight;
+            radiance += litColor * diffuseWeight;
 
             // Remaining transmittance carried by reflection ray
             transmittance = reflWeight;
@@ -545,8 +553,8 @@ void main()
         }
         else if (effectiveType == MATERIAL_DIFFUSE)
         {
-            // Diffuse mesh: blend color and terminate
-            radiance += meshPayload.color * transmittance;
+            // Diffuse mesh: blend lit color and terminate
+            radiance += litColor * transmittance;
             transmittance = 0.0;
             break;
         }
