@@ -57,6 +57,7 @@ void RayTraceDescriptorSet::cleanup(VkDevice device)
     cachedMeshTlasHandle_ = VK_NULL_HANDLE;
     boundMeshTlas_        = VK_NULL_HANDLE;
     boundMeshVertices_    = VK_NULL_HANDLE;
+    boundMeshNormals_     = VK_NULL_HANDLE;
     boundMeshIndices_     = VK_NULL_HANDLE;
     boundMeshMaterials_   = VK_NULL_HANDLE;
     ctx_                  = nullptr;
@@ -70,6 +71,8 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
                                    VkAccelerationStructureKHR meshTlas,
                                    VkBuffer meshVertexBuffer,
                                    VkDeviceSize meshVertexSize,
+                                   VkBuffer meshNormalBuffer,
+                                   VkDeviceSize meshNormalSize,
                                    VkBuffer meshIndexBuffer,
                                    VkDeviceSize meshIndexSize,
                                    VkBuffer meshMaterialBuffer,
@@ -81,6 +84,7 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
                             (boundSceneBounds_  != sceneBoundsBuffer) ||
                             (boundMeshTlas_     != meshTlas)          ||
                             (boundMeshVertices_ != meshVertexBuffer)  ||
+                            (boundMeshNormals_  != meshNormalBuffer)  ||
                             (boundMeshIndices_  != meshIndexBuffer)   ||
                             (boundMeshMaterials_ != meshMaterialBuffer);
 
@@ -106,6 +110,7 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
     boundSceneBounds_    = sceneBoundsBuffer;
     boundMeshTlas_       = meshTlas;
     boundMeshVertices_   = meshVertexBuffer;
+    boundMeshNormals_    = meshNormalBuffer;
     boundMeshIndices_    = meshIndexBuffer;
     boundMeshMaterials_  = meshMaterialBuffer;
 
@@ -188,12 +193,14 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
     };
     writes.push_back(meshTlasDescriptor);
 
-    // Binding 4,5,6: Mesh Vertex/Index/Material Buffers
+    // Binding 4,5,6,7: Mesh Vertex/Normal/Index/Material Buffers
     // Use dummy buffer as placeholder when no mesh buffers are present
     VkBuffer  actualVertexBuf   = (meshVertexBuffer   != VK_NULL_HANDLE) ? meshVertexBuffer   : dummyBuffer_.buffer;
+    VkBuffer  actualNormalBuf   = (meshNormalBuffer    != VK_NULL_HANDLE) ? meshNormalBuffer   : dummyBuffer_.buffer;
     VkBuffer  actualIndexBuf    = (meshIndexBuffer     != VK_NULL_HANDLE) ? meshIndexBuffer    : dummyBuffer_.buffer;
     VkBuffer  actualMaterialBuf = (meshMaterialBuffer  != VK_NULL_HANDLE) ? meshMaterialBuffer : dummyBuffer_.buffer;
     VkDeviceSize actualVertexSize   = (meshVertexBuffer   != VK_NULL_HANDLE) ? meshVertexSize   : dummyBuffer_.size;
+    VkDeviceSize actualNormalSize   = (meshNormalBuffer    != VK_NULL_HANDLE) ? meshNormalSize   : dummyBuffer_.size;
     VkDeviceSize actualIndexSize    = (meshIndexBuffer     != VK_NULL_HANDLE) ? meshIndexSize    : dummyBuffer_.size;
     VkDeviceSize actualMaterialSize = (meshMaterialBuffer  != VK_NULL_HANDLE) ? meshMaterialSize : dummyBuffer_.size;
 
@@ -213,6 +220,22 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
     };
     writes.push_back(meshVertexDescriptor);
 
+    VkDescriptorBufferInfo meshNormalInfo{
+        .buffer = actualNormalBuf,
+        .offset = 0,
+        .range  = actualNormalSize
+    };
+    VkWriteDescriptorSet meshNormalDescriptor{
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet          = descriptorSet_,
+        .dstBinding      = 5,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        .pBufferInfo     = &meshNormalInfo
+    };
+    writes.push_back(meshNormalDescriptor);
+
     VkDescriptorBufferInfo meshIndexInfo{
         .buffer = actualIndexBuf,
         .offset = 0,
@@ -221,7 +244,7 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
     VkWriteDescriptorSet meshIndexDescriptor{
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = descriptorSet_,
-        .dstBinding      = 5,
+        .dstBinding      = 6,
         .dstArrayElement = 0,
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -237,7 +260,7 @@ bool RayTraceDescriptorSet::update(VkAccelerationStructureKHR tlas,
     VkWriteDescriptorSet meshMaterialDescriptor{
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = descriptorSet_,
-        .dstBinding      = 6,
+        .dstBinding      = 7,
         .dstArrayElement = 0,
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -337,16 +360,23 @@ bool RayTraceDescriptorSet::createLayout()
             .count      = 1,
             .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         },
-        // Binding 5: Mesh Index Buffer
+        // Binding 5: Mesh Normal Buffer
         {
             .binding    = 5,
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .count      = 1,
             .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         },
-        // Binding 6: Mesh Material Buffer
+        // Binding 6: Mesh Index Buffer
         {
             .binding    = 6,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .count      = 1,
+            .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+        },
+        // Binding 7: Mesh Material Buffer
+        {
+            .binding    = 7,
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .count      = 1,
             .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
@@ -365,7 +395,7 @@ bool RayTraceDescriptorSet::createPool()
         { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 2 },  // binding 0 (Gaussian) + binding 3 (Mesh)
         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              1 },  // binding 1
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1 },  // binding 2
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             3 }   // binding 4,5,6
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             4 }   // binding 4,5,6,7
     };
 
     allocator_.create(ctx_->getDevice(), 1, poolSizes);

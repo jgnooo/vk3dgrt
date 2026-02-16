@@ -51,6 +51,7 @@ struct MeshInstance
 {
     std::string             name;
     std::vector<glm::vec3>  vertices;
+    std::vector<glm::vec3>  normals;
     std::vector<glm::uvec3> indices;
     MeshMaterial            material;
     glm::mat4               transform = glm::mat4(1.0f);

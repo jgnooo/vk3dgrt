@@ -21,7 +21,7 @@ MeshInstance createPresetMesh(MeshPreset preset,
             mesh.name = "Teapot";
 
             std::string objPath = std::string(DATA_DIR) + "/teapot.obj";
-            if (!loadMeshFromOBJ(objPath, mesh.vertices, mesh.indices))
+            if (!loadMeshFromOBJ(objPath, mesh.vertices, mesh.normals, mesh.indices))
             {
                 Log::ERR("MeshData") << "Failed to load teapot.obj";
                 break;

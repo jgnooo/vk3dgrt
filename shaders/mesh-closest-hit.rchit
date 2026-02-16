@@ -10,17 +10,24 @@ layout(set = 0, binding = 4, scalar) readonly buffer MeshVertexBuf
     vec3 data[];
 } meshVertices;
 
-layout(set = 0, binding = 5, scalar) readonly buffer MeshIndexBuf
+layout(set = 0, binding = 5, scalar) readonly buffer MeshNormalBuf
+{
+    vec3 data[];
+} meshNormals;
+
+layout(set = 0, binding = 6, scalar) readonly buffer MeshIndexBuf
 {
     uvec3 data[];
 } meshIndices;
 
-layout(set = 0, binding = 6, std430) readonly buffer MeshMaterialBuf
+layout(set = 0, binding = 7, std430) readonly buffer MeshMaterialBuf
 {
     MeshMaterialGPU data[];
 } meshMaterials;
 
 layout(location = 1) rayPayloadInEXT MeshHitPayload meshPayload;
+
+hitAttributeEXT vec2 hitBarycentrics;
 
 
 void main()
@@ -28,14 +35,26 @@ void main()
     uint meshIndex = gl_InstanceCustomIndexEXT;
 
     uvec3 idx = meshIndices.data[gl_PrimitiveID];
-    vec3 v0 = meshVertices.data[idx.x];
-    vec3 v1 = meshVertices.data[idx.y];
-    vec3 v2 = meshVertices.data[idx.z];
 
-    // Normal calculation
-    vec3 edge1 = v1 - v0;
-    vec3 edge2 = v2 - v0;
-    vec3 normal = normalize(cross(edge1, edge2));
+    // Barycentric interpolation of per-vertex normals
+    vec3 barycentrics = vec3(
+        1.0 - hitBarycentrics.x - hitBarycentrics.y,
+        hitBarycentrics.x,
+        hitBarycentrics.y
+    );
+
+    vec3 n0 = meshNormals.data[idx.x];
+    vec3 n1 = meshNormals.data[idx.y];
+    vec3 n2 = meshNormals.data[idx.z];
+
+    vec3 normal = normalize(
+        barycentrics.x * n0 +
+        barycentrics.y * n1 +
+        barycentrics.z * n2
+    );
+
+    // Transform normal to world space
+    normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
 
     if (dot(normal, gl_WorldRayDirectionEXT) > 0.0)
     {

@@ -20,6 +20,7 @@ class MeshBuffers
     uint32_t meshCount_    = 0;
 
     AllocatedBuffer vertexBuffer_;
+    AllocatedBuffer normalBuffer_;
     AllocatedBuffer indexBuffer_;
     AllocatedBuffer materialBuffer_;
 
@@ -50,14 +51,17 @@ public:
     uint32_t getTotalIndexCount() const { return indexCount_; }
 
     VkBuffer getVertexBufferHandle() const { return vertexBuffer_.buffer; }
+    VkBuffer getNormalBufferHandle() const { return normalBuffer_.buffer; }
     VkBuffer getIndexBufferHandle() const { return indexBuffer_.buffer; }
     VkBuffer getMaterialBufferHandle() const { return materialBuffer_.buffer; }
 
     VkDeviceSize getVertexBufferSize() const { return vertexBuffer_.size; }
+    VkDeviceSize getNormalBufferSize() const { return normalBuffer_.size; }
     VkDeviceSize getIndexBufferSize() const { return indexBuffer_.size; }
     VkDeviceSize getMaterialBufferSize() const { return materialBuffer_.size; }
 
     VkDeviceAddress getVertexBufferAddress() const { return vertexBuffer_.deviceAddress; }
+    VkDeviceAddress getNormalBufferAddress() const { return normalBuffer_.deviceAddress; }
     VkDeviceAddress getIndexBufferAddress() const { return indexBuffer_.deviceAddress; }
 
     uint32_t getVertexOffset(uint32_t meshIndex) const { return vertexOffsets_[meshIndex]; }

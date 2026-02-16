@@ -11,6 +11,7 @@ namespace vk3dgrt {
 
 bool loadMeshFromOBJ(const std::string& filePath,
                      std::vector<glm::vec3>& outVertices,
+                     std::vector<glm::vec3>& outNormals,
                      std::vector<glm::uvec3>& outIndices);
 
 }   // namespace vk3dgrt

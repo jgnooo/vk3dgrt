@@ -51,11 +51,17 @@ bool MeshBuffers::initialize(VkContext* context,
     std::vector<glm::vec3> allVertices;
     allVertices.reserve(totalVertices);
 
+    std::vector<glm::vec3> allNormals;
+    allNormals.reserve(totalVertices);
+
     for (const auto& mesh : meshes)
     {
         allVertices.insert(allVertices.end(),
                            mesh.vertices.begin(),
                            mesh.vertices.end());
+        allNormals.insert(allNormals.end(),
+                          mesh.normals.begin(),
+                          mesh.normals.end());
     }
 
     std::vector<glm::uvec3> allIndices;
@@ -93,6 +99,16 @@ bool MeshBuffers::initialize(VkContext* context,
         return false;
     }
 
+    VkDeviceSize normalDataSize = totalVertices * sizeof(glm::vec3);
+    normalBuffer_.create(context, normalDataSize, BufferUsage::STORAGE, false);
+
+    if (!stageAndUpload(context, normalBuffer_, allNormals.data(),
+                        normalDataSize, transferQueue, transferCommandPool))
+    {
+        Log::ERR("MeshBuffers") << "Failed to upload normal buffer";
+        return false;
+    }
+
     VkDeviceSize indexDataSize = totalTriangles * sizeof(glm::uvec3);
     indexBuffer_.create(context, indexDataSize, BufferUsage::AS_BUILD_INPUT, false);
 
@@ -115,7 +131,7 @@ bool MeshBuffers::initialize(VkContext* context,
 
     initialized_ = true;
 
-    VkDeviceSize totalSize = vertexDataSize + indexDataSize + materialDataSize;
+    VkDeviceSize totalSize = vertexDataSize + normalDataSize + indexDataSize + materialDataSize;
     Log::OK("MeshBuffers") << "Uploaded " << meshCount_ << " meshes ("
         << totalVertices << " verts, " << totalTriangles << " tris, "
         << Log::formatMemory(totalSize) << ")";
@@ -132,6 +148,7 @@ void MeshBuffers::cleanup(VmaAllocator allocator)
     }
 
     vertexBuffer_.cleanup(allocator);
+    normalBuffer_.cleanup(allocator);
     indexBuffer_.cleanup(allocator);
     materialBuffer_.cleanup(allocator);
 

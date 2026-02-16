@@ -163,6 +163,8 @@ bool Renderer::updateDescriptors(const TLAS& tlas,
     VkAccelerationStructureKHR meshTlasHandle  = VK_NULL_HANDLE;
     VkBuffer meshVertexBuffer                  = VK_NULL_HANDLE;
     VkDeviceSize meshVertexSize                = 0;
+    VkBuffer meshNormalBuffer                  = VK_NULL_HANDLE;
+    VkDeviceSize meshNormalSize                = 0;
     VkBuffer meshIndexBuffer                   = VK_NULL_HANDLE;
     VkDeviceSize meshIndexSize                 = 0;
     VkBuffer meshMaterialBuffer                = VK_NULL_HANDLE;
@@ -171,13 +173,15 @@ bool Renderer::updateDescriptors(const TLAS& tlas,
     if (meshTlas != nullptr && meshTlas->isBuilt() &&
         meshBuffers != nullptr && meshBuffers->isInitialized())
     {
-        meshTlasHandle    = meshTlas->getHandle();
-        meshVertexBuffer  = meshBuffers->getVertexBufferHandle();
-        meshVertexSize    = meshBuffers->getVertexBufferSize();
-        meshIndexBuffer   = meshBuffers->getIndexBufferHandle();
-        meshIndexSize     = meshBuffers->getIndexBufferSize();
+        meshTlasHandle     = meshTlas->getHandle();
+        meshVertexBuffer   = meshBuffers->getVertexBufferHandle();
+        meshVertexSize     = meshBuffers->getVertexBufferSize();
+        meshNormalBuffer   = meshBuffers->getNormalBufferHandle();
+        meshNormalSize     = meshBuffers->getNormalBufferSize();
+        meshIndexBuffer    = meshBuffers->getIndexBufferHandle();
+        meshIndexSize      = meshBuffers->getIndexBufferSize();
         meshMaterialBuffer = meshBuffers->getMaterialBufferHandle();
-        meshMaterialSize  = meshBuffers->getMaterialBufferSize();
+        meshMaterialSize   = meshBuffers->getMaterialBufferSize();
     }
 
     return rtDescriptorSet.update(
@@ -188,6 +192,8 @@ bool Renderer::updateDescriptors(const TLAS& tlas,
         meshTlasHandle,
         meshVertexBuffer,
         meshVertexSize,
+        meshNormalBuffer,
+        meshNormalSize,
         meshIndexBuffer,
         meshIndexSize,
         meshMaterialBuffer,
