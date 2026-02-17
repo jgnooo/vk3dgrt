@@ -500,6 +500,7 @@ CameraUBO GRTScene::buildCameraUBO() const
     ubo.projInverse  = camera.getInverseProjectionMatrix();
     ubo.nearPlane    = camera.zNear;
     ubo.farPlane     = camera.zFar;
+    ubo.cameraType   = cameraType_;
 
     return ubo;
 }

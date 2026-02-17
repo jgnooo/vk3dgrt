@@ -151,6 +151,7 @@ set(SHADER_INCLUDES
     ${SHADER_SOURCE_DIR}/utils/eval.glsl
     ${SHADER_SOURCE_DIR}/utils/spherical-harmonics.glsl
     ${SHADER_SOURCE_DIR}/utils/trace.glsl
+    ${SHADER_SOURCE_DIR}/utils/fisheye.glsl
 )
 
 # Compile each shader with compile-time defines

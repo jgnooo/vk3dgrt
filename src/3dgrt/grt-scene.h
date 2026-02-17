@@ -72,6 +72,8 @@ class GRTScene : public Scene
     // SH degree (0=off, 1-3)
     uint32_t shDegree_ = 0;
 
+    uint32_t cameraType_ = 0;  // 0=pinhole, 1=fisheye
+
 public:
     GRTScene()  = default;
     ~GRTScene() override = default;
@@ -146,6 +148,9 @@ public:
     bool isReflectionEnabled() const { return reflectionEnabled_; }
     void setMaxBounces(uint32_t bounces);
     uint32_t getMaxBounces() const { return maxBounces_; }
+
+    void setCameraType(uint32_t type) { cameraType_ = type; }
+    uint32_t getCameraType() const { return cameraType_; }
 
 private:
     void computeSceneBounds();

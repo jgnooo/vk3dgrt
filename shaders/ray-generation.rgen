@@ -7,6 +7,7 @@
 #include "utils/math.glsl"
 #include "utils/eval.glsl"
 #include "utils/spherical-harmonics.glsl"
+#include "utils/fisheye.glsl"
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 1, rgba16f) uniform image2D outputImage;
@@ -71,7 +72,7 @@ void main()
     vec3 rayOrigin;
     vec3 rayDirection;
 
-    // Pinhole
+    if (camera.cameraType == 0)  // Pinhole
     {
         const vec2 uv  = pixelCenter / vec2(launchSize);
         const vec2 ndc = uv * 2.0 - 1.0;
@@ -84,9 +85,18 @@ void main()
         rayOrigin    = origin.xyz;
         rayDirection = normalize(direction.xyz);
     }
-    // Fisheye
+    else if (camera.cameraType == 1)  // Fisheye
     {
-        // TODO: Not yet implemented
+        vec3 dirLocal = computeFisheyeRayDirection(pixelCenter, vec2(launchSize));
+
+        if (dirLocal == vec3(0.0))
+        {
+            imageStore(outputImage, ivec2(pixelCoord), vec4(0.0, 0.0, 0.0, 1.0));
+            return;
+        }
+
+        rayOrigin    = (camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+        rayDirection = normalize((camera.viewInverse * vec4(dirLocal, 0.0)).xyz);
     }
 
     vec3  radiance      = vec3(0.0);

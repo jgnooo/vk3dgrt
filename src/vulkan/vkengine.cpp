@@ -404,6 +404,15 @@ void VkEngine::draw()
         imguiManager.clearRemoveMeshIndex();
     }
 
+    if (imguiManager.isCameraTypeChanged())
+    {
+        if (gs)
+        {
+            gs->setCameraType(imguiManager.getCameraType());
+        }
+        imguiManager.clearCameraTypeChanged();
+    }
+
     // Finalize ImGui frame
     imguiManager.render();
 

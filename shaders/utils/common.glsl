@@ -35,7 +35,7 @@ struct Camera
     mat4  projInverse;       // Inverse projection matrix
     float nearPlane;         // Near clipping plane
     float farPlane;          // Far clipping plane
-    uint  _pad0;             // Padding for 16-byte alignment
+    uint  cameraType;        // Camera type (0=pinhole, 1=fisheye)
     uint  _pad1;
 };
 
