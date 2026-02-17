@@ -334,6 +334,12 @@ void VkEngine::draw()
     imguiManager.showFpsOverlay();
     imguiManager.showRightPanel();
 
+    // Axis gizmo
+    if (gs)
+    {
+        imguiManager.showAxisGizmo(gs->getCamera().getViewMatrix());
+    }
+
     // Handle render mode changes from GUI
     if (imguiManager.isRenderModeChanged())
     {

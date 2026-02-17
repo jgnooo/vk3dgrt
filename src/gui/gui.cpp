@@ -166,6 +166,12 @@ void ImGuiManager::showFpsOverlay()
 }
 
 
+void ImGuiManager::showAxisGizmo(const glm::mat4& viewMatrix)
+{
+    axisGizmo_.draw(viewMatrix);
+}
+
+
 void ImGuiManager::showRightPanel()
 {
     if (!showRightPanel_)

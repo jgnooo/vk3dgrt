@@ -1,6 +1,8 @@
 #ifndef GUI_H
 #define GUI_H
 
+#include "axis-gizmo.h"
+
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
@@ -67,6 +69,9 @@ class ImGuiManager
     float fisheyeK4_            = 0.0f;
     bool  fisheyeParamsChanged_ = false;
 
+    // Axis gizmo
+    AxisGizmo axisGizmo_;
+
 public:
     void initialize(GLFWwindow* window,
                     VkContext* context,
@@ -81,6 +86,7 @@ public:
     // UI panels
     void showFpsOverlay();
     void showRightPanel();
+    void showAxisGizmo(const glm::mat4& viewMatrix);
 
     // Scene access (for Assets panel)
     void setScene(vk3dgrt::GRTScene* scene) { scene_ = scene; }
