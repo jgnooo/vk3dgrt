@@ -150,6 +150,7 @@ set(SHADER_INCLUDES
     ${SHADER_SOURCE_DIR}/utils/math.glsl
     ${SHADER_SOURCE_DIR}/utils/eval.glsl
     ${SHADER_SOURCE_DIR}/utils/spherical-harmonics.glsl
+    ${SHADER_SOURCE_DIR}/utils/trace.glsl
 )
 
 # Create gaussian shader output directory

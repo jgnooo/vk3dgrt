@@ -55,85 +55,9 @@ const float T_EPSILON                   = 1e-5;        // Epsilon for tMin advan
 const float MIN_PARTICLE_KERNEL_DENSITY = 0.0113;      // min_response (official: 0.0113)
 const float MIN_PARTICLE_ALPHA          = 0.00392157;  // min_alpha = 1/255
 
-
-// Fetch a single vec3 SH coefficient from packed fp16 buffer.
-// Each coefficient = 3 fp16 (RGB) packed into uint32 pairs.
-// shIdx must be a compile-time literal for optimal codegen
-// (compiler resolves fi/2, fi%2 at compile time → no branch).
-vec3 fetchSHCoeff(uint shBase, int shIdx)
-{
-    int fi = shIdx * 3;
-    vec2 p0 = unpackHalf2x16(shBuffer.data[shBase + fi / 2]);
-    vec2 p1 = unpackHalf2x16(shBuffer.data[shBase + (fi + 1) / 2]);
-    vec2 p2 = unpackHalf2x16(shBuffer.data[shBase + (fi + 2) / 2]);
-    return vec3(
-        (fi % 2 == 0)       ? p0.x : p0.y,
-        ((fi + 1) % 2 == 0) ? p1.x : p1.y,
-        ((fi + 2) % 2 == 0) ? p2.x : p2.y
-    );
-}
-
-
-// Streaming SH evaluation: no local array, reads each coefficient on demand.
-// Register usage: vec3 x 1 (reused) instead of vec3 x 16.
-// Only reads coefficients needed for the given maxDegree.
-vec3 evaluateParticleSH(uint particleId, vec3 viewDir, int maxDegree)
-{
-    uint shBase = particleId * 24;
-
-    vec3  d = normalize(viewDir);
-    float x = d.x;
-    float y = d.y;
-    float z = d.z;
-
-    // ── Degree 0 (1 coefficient) ──
-    vec3 result = vec3(0.5) + SH_C0 * fetchSHCoeff(shBase, 0);
-
-    if (maxDegree < 1)
-    {
-        return max(result, vec3(0.0));
-    }
-
-    // ── Degree 1 (3 coefficients) ──
-    result += SH_C1 * (-y) * fetchSHCoeff(shBase, 1);
-    result += SH_C1 *   z  * fetchSHCoeff(shBase, 2);
-    result += SH_C1 * (-x) * fetchSHCoeff(shBase, 3);
-
-    if (maxDegree < 2)
-    {
-        return max(result, vec3(0.0));
-    }
-
-    // ── Degree 2 (5 coefficients) ──
-    float xx = x * x;
-    float yy = y * y;
-    float zz = z * z;
-    float xy = x * y;
-    float xz = x * z;
-    float yz = y * z;
-
-    result += SH_C2[0] * xy * fetchSHCoeff(shBase, 4);
-    result += SH_C2[1] * yz * fetchSHCoeff(shBase, 5);
-    result += SH_C2[2] * (2.0 * zz - xx - yy) * fetchSHCoeff(shBase, 6);
-    result += SH_C2[3] * xz * fetchSHCoeff(shBase, 7);
-    result += SH_C2[4] * (xx - yy) * fetchSHCoeff(shBase, 8);
-
-    if (maxDegree < 3)
-    {
-        return max(result, vec3(0.0));
-    }
-
-    // ── Degree 3 (7 coefficients) ──
-    result += SH_C3[0] * y * (3.0 * xx - yy) * fetchSHCoeff(shBase, 9);
-    result += SH_C3[1] * xy * z * fetchSHCoeff(shBase, 10);
-    result += SH_C3[2] * y * (4.0 * zz - xx - yy) * fetchSHCoeff(shBase, 11);
-    result += SH_C3[3] * z * (2.0 * zz - 3.0 * xx - 3.0 * yy) * fetchSHCoeff(shBase, 12);
-    result += SH_C3[4] * x * (4.0 * zz - xx - yy) * fetchSHCoeff(shBase, 13);
-    result += SH_C3[5] * z * (xx - yy) * fetchSHCoeff(shBase, 14);
-    result += SH_C3[6] * x * (xx - 3.0 * yy)* fetchSHCoeff(shBase, 15);
-
-    return max(result, vec3(0.0));
-}
+// trace.glsl depends on global declarations and constants above (tlas, payload, buffers, etc.),
+// so it must be included after all layout declarations and constant definitions.
+#include "utils/trace.glsl"
 
 
 void main()
@@ -143,17 +67,27 @@ void main()
 
     // Compute normalized device coordinates (NDC)
     const vec2 pixelCenter = vec2(pixelCoord) + vec2(0.5);
-    const vec2 uv          = pixelCenter / vec2(launchSize);
-    const vec2 ndc         = uv * 2.0 - 1.0;
 
-    // Generate camera ray using inverse matrices
-    vec4 origin    = camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0);
-    vec4 target    = camera.projInverse * vec4(ndc.x, ndc.y, 1.0, 1.0);
-    target /= target.w;
-    vec4 direction = camera.viewInverse * vec4(normalize(target.xyz), 0.0);
+    vec3 rayOrigin;
+    vec3 rayDirection;
 
-    vec3 rayOrigin    = origin.xyz;
-    vec3 rayDirection = normalize(direction.xyz);
+    // Pinhole
+    {
+        const vec2 uv  = pixelCenter / vec2(launchSize);
+        const vec2 ndc = uv * 2.0 - 1.0;
+
+        vec4 origin    = camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0);
+        vec4 target    = camera.projInverse * vec4(ndc.x, ndc.y, 1.0, 1.0);
+        target        /= target.w;
+        vec4 direction = camera.viewInverse * vec4(normalize(target.xyz), 0.0);
+
+        rayOrigin    = origin.xyz;
+        rayDirection = normalize(direction.xyz);
+    }
+    // Fisheye
+    {
+        // TODO: Not yet implemented
+    }
 
     vec3  radiance      = vec3(0.0);
     float transmittance = 1.0;
@@ -162,414 +96,60 @@ void main()
     float tMin = camera.nearPlane;
     float tMax = camera.farPlane;
 
-    // ════════════════════════════════════════════════════════
-    //  Non-reflection path
-    // ════════════════════════════════════════════════════════
-    if (sceneBounds.enableReflection == 0 && sceneBounds.meshCount == 0)
-    {
-        float rayLastHitDist = max(0.0, tMin - T_EPSILON);
-
-        uint rayFlags = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
-
-        // Iterative tracing loop
-        int iteration = 0;
-        while (transmittance > TRANSMITTANCE_THRESHOLD &&
-               rayLastHitDist <= tMax &&
-               iteration < MAX_ITERATIONS)
-        {
-            // Initialize payload with invalid hits
-            for (int i = 0; i < MAX_HITS_PER_TRACE; i++)
-            {
-                payload.id[i]   = INVALID_PARTICLE_ID;
-                payload.dist[i] = INFINITE_DISTANCE;
-            }
-
-            // Trace ray - Any-Hit shader will fill sorted hit array
-            traceRayEXT(
-                tlas,
-                rayFlags,
-                0xFF,
-                0, 0, 0,
-                rayOrigin,
-                rayLastHitDist + T_EPSILON,
-                rayDirection,
-                tMax,
-                0
-            );
-
-            // Check if any hits were collected
-            if (payload.id[0] == INVALID_PARTICLE_ID)
-            {
-                break;
-            }
-
-            // Process all valid hits in sorted order (front-to-back)
-            for (int i = 0; i < MAX_HITS_PER_TRACE; i++)
-            {
-                uint particleId = payload.id[i];
-                if (particleId == INVALID_PARTICLE_ID)
-                {
-                    break;
-                }
-
-                float hitDist = payload.dist[i];
-
-                // Track farthest processed hit (for tMin advancement)
-                rayLastHitDist = max(rayLastHitDist, hitDist);
-
-                if (sceneBounds.renderMode == RENDER_MODE_POINT)
-                {
-                    // Point visualization: simple opaque dots
-                    vec3 pPosition = positionBuffer.data[particleId];
-                    vec4 pColor    = colorBuffer.data[particleId];
-
-                    vec3 toCenter  = pPosition - rayOrigin;
-                    float t        = dot(toCenter, rayDirection);
-                    vec3 closestPt = rayOrigin + t * rayDirection;
-                    float dist     = length(pPosition - closestPt);
-
-                    if (dist <= 0.003)
-                    {
-                        radiance += pColor.rgb * transmittance;
-                        depth    += t * transmittance;
-                        transmittance = 0.0;
-                    }
-                }
-                else if (sceneBounds.renderMode == RENDER_MODE_SPLAT)
-                {
-                    // Splat visualization: 2D circular falloff
-                    vec3  pPosition   = positionBuffer.data[particleId];
-                    vec4  pColor      = colorBuffer.data[particleId];
-                    vec4  pQuaternion = quaternionBuffer.data[particleId];
-                    vec3  pScale      = scaleBuffer.data[particleId];
-
-                    float pOpacity = pColor.a;
-
-                    mat3 R        = quaternionToMatrix(pQuaternion);
-                    mat3 RT       = transpose(R);
-                    vec3 invScale = 1.0 / max(pScale, vec3(1e-8));
-
-                    vec3 offset = rayOrigin - pPosition;
-                    vec3 o_g    = invScale * (RT * offset);
-                    vec3 d_g    = invScale * (RT * rayDirection);
-
-                    float d_g_dot = dot(d_g, d_g);
-                    float d_val   = -dot(o_g, d_g) / max(1e-6, d_g_dot);
-
-                    vec3 pos  = rayOrigin + d_val * rayDirection;
-                    vec3 p_g  = invScale * (RT * (pPosition - pos));
-                    float dist2D = length(p_g.xy);
-
-                    float response = exp(-0.5 * dist2D * dist2D);
-                    if (response >= MIN_PARTICLE_KERNEL_DENSITY)
-                    {
-                        float alpha = min(response * pOpacity, 0.99);
-                        if (alpha >= MIN_PARTICLE_ALPHA)
-                        {
-                            float weight = alpha * transmittance;
-                            radiance += pColor.rgb * weight;
-                            depth    += max(d_val, 0.0) * weight;
-                            transmittance *= (1.0 - alpha);
-                        }
-                    }
-                }
-                else if (sceneBounds.renderMode == RENDER_MODE_GS)
-                {
-                    // 1. Load particle color + opacity (early cull check)
-                    vec4  pColor   = colorBuffer.data[particleId];
-                    float pOpacity = pColor.a;
-
-                    // 2. Density pre-cull (nvpro: particleDensity > alphaCullThreshold)
-                    //    Skip particles with negligible opacity before expensive math
-                    if (pOpacity > MIN_PARTICLE_ALPHA)
-                    {
-                        // 3. Load remaining particle data
-                        vec3  pPosition   = positionBuffer.data[particleId];
-                        vec4  pQuaternion = quaternionBuffer.data[particleId];
-                        vec3  pScale      = scaleBuffer.data[particleId];
-
-                        // 4. Transform ray to particle's local coordinate system
-                        mat3 R        = quaternionToMatrix(pQuaternion);
-                        mat3 RT       = transpose(R);
-                        vec3 invScale = 1.0 / max(pScale, vec3(1e-8));
-
-                        vec3 offset = rayOrigin - pPosition;
-                        vec3 o_g    = invScale * (RT * offset);
-                        vec3 d_g    = invScale * (RT * rayDirection);
-
-                        // 5. Compute closest point parameter (for depth) and grayDist
-                        float d_g_dot = dot(d_g, d_g);
-                        float d_val   = -dot(o_g, d_g) / max(1e-6, d_g_dot);
-
-                        // 6. grayDist via cross-product (nvpro optimization)
-                        vec3 d_norm    = d_g * inversesqrt(max(1e-6, d_g_dot));
-                        vec3 gcrod     = cross(d_norm, o_g);
-                        float grayDist = dot(gcrod, gcrod);
-
-                        // 7. Compute particle response using runtime kernel degree
-                        float response = particleResponse(grayDist, int(sceneBounds.kernelDegree));
-
-                        // 8. Early exit for negligible response
-                        if (response >= MIN_PARTICLE_KERNEL_DENSITY)
-                        {
-                            // 9. Compute alpha and check threshold
-                            float alpha = min(0.99, response * pOpacity);
-                            if (alpha >= MIN_PARTICLE_ALPHA)
-                            {
-                                // 10. Evaluate color (DC or SH, runtime degree via UBO)
-                                vec3 finalColor = pColor.rgb;
-
-                                if (sceneBounds.hasSH > 0 && sceneBounds.shDegree > 0)
-                                {
-                                    // View-dependent color via Spherical Harmonics
-                                    // Use direction to particle center (nvpro approach, more physically correct)
-                                    vec3 viewDir = normalize(pPosition - rayOrigin);
-                                    finalColor = evaluateParticleSH(particleId, viewDir, int(sceneBounds.shDegree));
-                                }
-
-                                // 11. Accumulate using Over operator (front-to-back)
-                                float weight = alpha * transmittance;
-                                radiance += finalColor * weight;
-                                depth    += max(d_val, 0.0) * weight;
-                                transmittance *= (1.0 - alpha);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // Unsupported render mode
-                }
-
-                // Early termination if nearly opaque
-                if (transmittance <= TRANSMITTANCE_THRESHOLD)
-                {
-                    break;
-                }
-            }
-
-            iteration++;
-        }
-
-        // Store output (black background for remaining transmittance)
-        imageStore(outputImage, ivec2(pixelCoord), vec4(radiance, 1.0));
-        return;
-    }
-
-    // ════════════════════════════════════════════════════════
-    //  Reflection path
-    // ════════════════════════════════════════════════════════
     vec3 currentOrigin    = rayOrigin;
     vec3 currentDirection = rayDirection;
 
-    uint maxBounces = min(sceneBounds.maxBounces, MAX_BOUNCES);
+    bool needMeshTrace = (sceneBounds.enableReflection > 0 || sceneBounds.meshCount > 0);
+    uint maxBounces    = needMeshTrace ? min(sceneBounds.maxBounces, MAX_BOUNCES) : 0u;
 
     for (uint bounce = 0; bounce <= maxBounces; ++bounce)
     {
-        // Early exit: nearly opaque
         if (transmittance <= TRANSMITTANCE_THRESHOLD)
         {
             break;
         }
 
-        // ─── Step 1: Mesh TLAS intersection test ───
-        meshPayload.hitDist      = INFINITE_DISTANCE;
-        meshPayload.materialType = MATERIAL_DIFFUSE;
+        float meshHitDist = INFINITE_DISTANCE;
 
-        if (sceneBounds.meshCount > 0)
+        if (needMeshTrace && sceneBounds.meshCount > 0)
         {
+            meshPayload.hitDist      = INFINITE_DISTANCE;
+            meshPayload.materialType = MATERIAL_DIFFUSE;
+
             traceRayEXT(
-                meshTlas,                  // Separate Mesh TLAS
-                gl_RayFlagsNoneEXT,        // Enable closest-hit
-                0xFF,                      // mask = 0xFF (dual TLAS, no filtering needed)
-                0,                         // sbtRecordOffset = 0 (instance offset=1 routes to hit group 1)
-                0,                         // sbtRecordStride
-                0,                         // missIndex
+                meshTlas,
+                gl_RayFlagsNoneEXT,
+                0xFF,
+                0, 0, 0,
                 currentOrigin,
                 tMin,
                 currentDirection,
                 tMax,
-                1                          // payload location 1
-            );
-        }
-
-        float meshHitDist = meshPayload.hitDist;
-
-        // ─── Step 2: Gaussian TLAS tracing (tMax bounded by mesh hit) ───
-        float gaussianTMax   = min(tMax, meshHitDist);
-        float rayLastHitDist = max(0.0, tMin - T_EPSILON);
-
-        uint rayFlags = gl_RayFlagsSkipClosestHitShaderEXT
-                      | gl_RayFlagsCullBackFacingTrianglesEXT;
-
-        int iteration     = 0;
-        int maxIterations = (bounce == 0) ? MAX_ITERATIONS : MAX_REFLECTION_ITERATIONS;
-
-        while (transmittance > TRANSMITTANCE_THRESHOLD &&
-               rayLastHitDist <= gaussianTMax &&
-               iteration < maxIterations)
-        {
-            // Initialize payload with invalid hits
-            for (int i = 0; i < MAX_HITS_PER_TRACE; i++)
-            {
-                payload.id[i]   = INVALID_PARTICLE_ID;
-                payload.dist[i] = INFINITE_DISTANCE;
-            }
-
-            // Trace Gaussian TLAS (unchanged from existing)
-            traceRayEXT(
-                tlas,
-                rayFlags,
-                0xFF,
-                0, 0, 0,
-                currentOrigin,
-                rayLastHitDist + T_EPSILON,
-                currentDirection,
-                gaussianTMax,              // Render particles only up to mesh hit
-                0
+                1
             );
 
-            if (payload.id[0] == INVALID_PARTICLE_ID)
-            {
-                break;
-            }
-
-            // Process all valid hits in sorted order (front-to-back)
-            for (int i = 0; i < MAX_HITS_PER_TRACE; i++)
-            {
-                uint particleId = payload.id[i];
-                if (particleId == INVALID_PARTICLE_ID)
-                {
-                    break;
-                }
-
-                float hitDist = payload.dist[i];
-
-                // Track farthest processed hit (for tMin advancement)
-                rayLastHitDist = max(rayLastHitDist, hitDist);
-
-                if (sceneBounds.renderMode == RENDER_MODE_POINT)
-                {
-                    vec3 pPosition = positionBuffer.data[particleId];
-                    vec4 pColor    = colorBuffer.data[particleId];
-
-                    vec3 toCenter  = pPosition - currentOrigin;
-                    float t        = dot(toCenter, currentDirection);
-                    vec3 closestPt = currentOrigin + t * currentDirection;
-                    float dist     = length(pPosition - closestPt);
-
-                    if (dist <= 0.003)
-                    {
-                        radiance += pColor.rgb * transmittance;
-                        depth    += t * transmittance;
-                        transmittance = 0.0;
-                    }
-                }
-                else if (sceneBounds.renderMode == RENDER_MODE_SPLAT)
-                {
-                    vec3  pPosition   = positionBuffer.data[particleId];
-                    vec4  pColor      = colorBuffer.data[particleId];
-                    vec4  pQuaternion = quaternionBuffer.data[particleId];
-                    vec3  pScale      = scaleBuffer.data[particleId];
-
-                    float pOpacity = pColor.a;
-
-                    mat3 R        = quaternionToMatrix(pQuaternion);
-                    mat3 RT       = transpose(R);
-                    vec3 invScale = 1.0 / max(pScale, vec3(1e-8));
-
-                    vec3 offset = currentOrigin - pPosition;
-                    vec3 o_g    = invScale * (RT * offset);
-                    vec3 d_g    = invScale * (RT * currentDirection);
-
-                    float d_g_dot = dot(d_g, d_g);
-                    float d_val   = -dot(o_g, d_g) / max(1e-6, d_g_dot);
-
-                    vec3 pos  = currentOrigin + d_val * currentDirection;
-                    vec3 p_g  = invScale * (RT * (pPosition - pos));
-                    float dist2D = length(p_g.xy);
-
-                    float response = exp(-0.5 * dist2D * dist2D);
-                    if (response >= MIN_PARTICLE_KERNEL_DENSITY)
-                    {
-                        float alpha = min(response * pOpacity, 0.99);
-                        if (alpha >= MIN_PARTICLE_ALPHA)
-                        {
-                            float weight = alpha * transmittance;
-                            radiance += pColor.rgb * weight;
-                            depth    += max(d_val, 0.0) * weight;
-                            transmittance *= (1.0 - alpha);
-                        }
-                    }
-                }
-                else if (sceneBounds.renderMode == RENDER_MODE_GS)
-                {
-                    vec4  pColor   = colorBuffer.data[particleId];
-                    float pOpacity = pColor.a;
-
-                    if (pOpacity > MIN_PARTICLE_ALPHA)
-                    {
-                        vec3  pPosition   = positionBuffer.data[particleId];
-                        vec4  pQuaternion = quaternionBuffer.data[particleId];
-                        vec3  pScale      = scaleBuffer.data[particleId];
-
-                        mat3 R        = quaternionToMatrix(pQuaternion);
-                        mat3 RT       = transpose(R);
-                        vec3 invScale = 1.0 / max(pScale, vec3(1e-8));
-
-                        vec3 offset = currentOrigin - pPosition;
-                        vec3 o_g    = invScale * (RT * offset);
-                        vec3 d_g    = invScale * (RT * currentDirection);
-
-                        float d_g_dot = dot(d_g, d_g);
-                        float d_val   = -dot(o_g, d_g) / max(1e-6, d_g_dot);
-
-                        vec3 d_norm    = d_g * inversesqrt(max(1e-6, d_g_dot));
-                        vec3 gcrod     = cross(d_norm, o_g);
-                        float grayDist = dot(gcrod, gcrod);
-
-                        float response = particleResponse(grayDist, int(sceneBounds.kernelDegree));
-
-                        if (response >= MIN_PARTICLE_KERNEL_DENSITY)
-                        {
-                            float alpha = min(0.99, response * pOpacity);
-                            if (alpha >= MIN_PARTICLE_ALPHA)
-                            {
-                                vec3 finalColor = pColor.rgb;
-
-                                if (sceneBounds.hasSH > 0 && sceneBounds.shDegree > 0)
-                                {
-                                    vec3 viewDir = normalize(pPosition - currentOrigin);
-                                    finalColor = evaluateParticleSH(particleId, viewDir, int(sceneBounds.shDegree));
-                                }
-
-                                float weight = alpha * transmittance;
-                                radiance += finalColor * weight;
-                                depth    += max(d_val, 0.0) * weight;
-                                transmittance *= (1.0 - alpha);
-                            }
-                        }
-                    }
-                }
-
-                // Early termination if nearly opaque
-                if (transmittance <= TRANSMITTANCE_THRESHOLD)
-                {
-                    break;
-                }
-            }
-
-            iteration++;
+            meshHitDist = meshPayload.hitDist;
         }
 
-        // ─── Step 3: Mesh hit handling ───
+        float gaussianTMax = min(tMax, meshHitDist);
+        int   maxIter      = (bounce == 0) ? MAX_ITERATIONS : MAX_REFLECTION_ITERATIONS;
+
+        traceGaussians(
+            currentOrigin, 
+            currentDirection,
+            tMin, 
+            gaussianTMax, 
+            maxIter,
+            radiance, 
+            transmittance, 
+            depth
+        );
+
         if (meshHitDist >= INFINITE_DISTANCE)
         {
-            // Mesh miss — end bounce loop
-            break;
+            break;  // No mesh — end bounce loop
         }
 
-        // Compute lit color (always apply default lighting)
         vec3 litColor = computeLighting(
             meshPayload.color, meshPayload.normal, currentDirection,
             sceneBounds.lightDir, sceneBounds.lightColor, sceneBounds.lightIntensity,
@@ -583,31 +163,21 @@ void main()
 
         if (effectiveType == MATERIAL_REFLECTIVE)
         {
-            // Compute reflection direction
-            vec3 reflDir = reflect(currentDirection, meshPayload.normal);
+            vec3  reflDir     = reflect(currentDirection, meshPayload.normal);
+            float reflWeight  = meshPayload.reflectivity * transmittance;
+            float diffWeight  = (1.0 - meshPayload.reflectivity) * transmittance;
 
-            // Reflection contribution: reflectivity * remaining transmittance
-            float reflWeight = meshPayload.reflectivity * transmittance;
+            radiance       += litColor * diffWeight;
+            transmittance   = reflWeight;
 
-            // Reflection ray origin (offset along normal to prevent self-intersection)
             currentOrigin    = currentOrigin + meshHitDist * currentDirection
                              + meshPayload.normal * T_EPSILON;
             currentDirection = reflDir;
             tMin             = 0.0;
-
-            // Mesh surface's own diffuse contribution (1 - reflectivity)
-            float diffuseWeight = (1.0 - meshPayload.reflectivity) * transmittance;
-            radiance += litColor * diffuseWeight;
-
-            // Remaining transmittance carried by reflection ray
-            transmittance = reflWeight;
-
-            // Continue to next bounce
         }
-        else if (effectiveType == MATERIAL_DIFFUSE)
+        else
         {
-            // Diffuse mesh: blend lit color and terminate
-            radiance += litColor * transmittance;
+            radiance     += litColor * transmittance;
             transmittance = 0.0;
             break;
         }
