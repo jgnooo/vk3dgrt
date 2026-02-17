@@ -23,12 +23,20 @@ namespace vk3dgrt {
 
 struct CameraPushConstants
 {
-    glm::mat4 viewInverse;       // Inverse view matrix                - 64 bytes
-    glm::mat4 projInverse;       // Inverse projection matrix          - 64 bytes
-    float     nearPlane;         // Near clipping plane                -  4 bytes
-    float     farPlane;          // Far clipping plane                 -  4 bytes
-    uint32_t  cameraType = 0;    // Camera type (0=pinhole, 1=fisheye) -  4 bytes
-    uint32_t  _pad1 = 0;         //                                    -  4 bytes
+    glm::mat4 viewInverse;                                 // Inverse view matrix                - 64 bytes
+    glm::mat4 projInverse;                                 // Inverse projection matrix          - 64 bytes
+    float     nearPlane;                                   // Near clipping plane                -  4 bytes
+    float     farPlane;                                    // Far clipping plane                 -  4 bytes
+    uint32_t  cameraType = 0;                              // Camera type (0=pinhole, 1=fisheye) -  4 bytes
+    float     fisheyeFov        = glm::pi<float>();        //                                    -  4 bytes
+    float     fisheyeMaxAngle   = glm::pi<float>() / 2.f;  //                                    -  4 bytes
+    float     fisheyeCx         = 0.0f;                    //                                    -  4 bytes
+    float     fisheyeCy         = 0.0f;                    //                                    -  4 bytes
+    float     fisheyeK1         = 0.0f;                    //                                    -  4 bytes
+    float     fisheyeK2         = 0.0f;                    //                                    -  4 bytes
+    float     fisheyeK3         = 0.0f;                    //                                    -  4 bytes
+    float     fisheyeK4         = 0.0f;                    //                                    -  4 bytes
+    uint32_t  _pad0             = 0;                       //                                    -  4 bytes
 
     // SoA Buffer Device Addresses for bindless buffer access
     VkDeviceAddress positionBufferAddress   = 0;  // vec3[] positions BDA
@@ -39,7 +47,7 @@ struct CameraPushConstants
 };
 
 
-static_assert(sizeof(CameraPushConstants) == 184, "CameraPushConstants must match GLSL PushConstants size (144 camera + 40 BDA)");
+static_assert(sizeof(CameraPushConstants) == 216, "CameraPushConstants must match GLSL PushConstants size (176 camera + 40 BDA)");
 
 
 // Alias for backward compatibility

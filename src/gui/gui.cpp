@@ -421,6 +421,69 @@ void ImGuiManager::showRightPanel()
                 }
             }
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::Text("Fisheye");
+        ImGui::Spacing();
+
+        if (ImGui::TreeNode("Fisheye Parameters"))
+        {
+            bool isFisheye = (cameraType_ == GUI_CAMERA_FISHEYE);
+            if (!isFisheye)
+            {
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::SliderAngle("FOV", &fisheyeFovDeg_, 10.0f, 360.0f))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (ImGui::SliderAngle("Max Angle", &fisheyeMaxAngleDeg_, 5.0f, 180.0f))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (ImGui::DragFloat("Center X", &fisheyeCx_, 0.5f, -500.0f, 500.0f, "%.1f px"))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (ImGui::DragFloat("Center Y", &fisheyeCy_, 0.5f, -500.0f, 500.0f, "%.1f px"))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (ImGui::DragFloat("k1", &fisheyeK1_, 0.001f, -1.0f, 1.0f, "%.4f"))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (ImGui::DragFloat("k2", &fisheyeK2_, 0.001f, -1.0f, 1.0f, "%.4f"))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (ImGui::DragFloat("k3", &fisheyeK3_, 0.001f, -1.0f, 1.0f, "%.4f"))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (ImGui::DragFloat("k4", &fisheyeK4_, 0.001f, -1.0f, 1.0f, "%.4f"))
+            {
+                fisheyeParamsChanged_ = true;
+            }
+
+            if (!isFisheye)
+            {
+                ImGui::EndDisabled();
+                ImGui::TextDisabled("Switch to Fisheye camera to adjust");
+            }
+
+            ImGui::TreePop();
+        }
     }
     ImGui::End();
 }

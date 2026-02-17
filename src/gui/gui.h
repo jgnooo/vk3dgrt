@@ -56,6 +56,17 @@ class ImGuiManager
     bool insertTeapot_    = false;
     int  removeMeshIndex_ = -1;
 
+    // Fisheye parameters (SliderAngle stores radians internally, displays degrees)
+    float fisheyeFovDeg_        = 3.14159265f;  // PI radians = 180°
+    float fisheyeMaxAngleDeg_   = 1.57079632f;  // PI/2 radians = 90°
+    float fisheyeCx_            = 0.0f;         // pixel offset
+    float fisheyeCy_            = 0.0f;         // pixel offset
+    float fisheyeK1_            = 0.0f;         // distortion coefficient
+    float fisheyeK2_            = 0.0f;
+    float fisheyeK3_            = 0.0f;
+    float fisheyeK4_            = 0.0f;
+    bool  fisheyeParamsChanged_ = false;
+
 public:
     void initialize(GLFWwindow* window,
                     VkContext* context,
@@ -119,6 +130,18 @@ public:
     void clearInsertTeapot() { insertTeapot_ = false; }
     int  getRemoveMeshIndex() const { return removeMeshIndex_; }
     void clearRemoveMeshIndex() { removeMeshIndex_ = -1; }
+
+    // Fisheye parameters
+    float getFisheyeFovDeg() const { return fisheyeFovDeg_; }
+    float getFisheyeMaxAngleDeg() const { return fisheyeMaxAngleDeg_; }
+    float getFisheyeCx() const { return fisheyeCx_; }
+    float getFisheyeCy() const { return fisheyeCy_; }
+    float getFisheyeK1() const { return fisheyeK1_; }
+    float getFisheyeK2() const { return fisheyeK2_; }
+    float getFisheyeK3() const { return fisheyeK3_; }
+    float getFisheyeK4() const { return fisheyeK4_; }
+    bool  isFisheyeParamsChanged() const { return fisheyeParamsChanged_; }
+    void  clearFisheyeParamsChanged() { fisheyeParamsChanged_ = false; }
 };
 
 #endif // GUI_H

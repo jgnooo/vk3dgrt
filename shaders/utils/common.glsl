@@ -35,8 +35,16 @@ struct Camera
     mat4  projInverse;       // Inverse projection matrix
     float nearPlane;         // Near clipping plane
     float farPlane;          // Far clipping plane
-    uint  cameraType;        // Camera type (0=pinhole, 1=fisheye)
-    uint  _pad1;
+    uint  cameraType;        // 0: Pinhole, 1: Fisheye
+    float fisheyeFov;        // FOV in radians (default: PI)
+    float fisheyeMaxAngle;   // max angle in radians (default: PI/2)
+    float fisheyeCx;         // principal point X offset (pixels)
+    float fisheyeCy;         // principal point Y offset (pixels)
+    float fisheyeK1;         // radial distortion coefficient 1
+    float fisheyeK2;         // radial distortion coefficient 2
+    float fisheyeK3;         // radial distortion coefficient 3
+    float fisheyeK4;         // radial distortion coefficient 4
+    uint  _pad0;
 };
 
 

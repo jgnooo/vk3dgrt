@@ -87,7 +87,18 @@ void main()
     }
     else if (camera.cameraType == 1)  // Fisheye
     {
-        vec3 dirLocal = computeFisheyeRayDirection(pixelCenter, vec2(launchSize));
+        vec3 dirLocal = computeFisheyeRayDirection(
+            pixelCenter, 
+            vec2(launchSize),
+            camera.fisheyeFov,
+            camera.fisheyeMaxAngle,
+            camera.fisheyeCx,
+            camera.fisheyeCy,
+            camera.fisheyeK1,
+            camera.fisheyeK2,
+            camera.fisheyeK3,
+            camera.fisheyeK4
+        );
 
         if (dirLocal == vec3(0.0))
         {

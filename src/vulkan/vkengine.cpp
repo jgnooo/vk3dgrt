@@ -413,6 +413,24 @@ void VkEngine::draw()
         imguiManager.clearCameraTypeChanged();
     }
 
+    if (imguiManager.isFisheyeParamsChanged())
+    {
+        if (gs)
+        {
+            gs->setFisheyeParams(
+                imguiManager.getFisheyeFovDeg(),
+                imguiManager.getFisheyeMaxAngleDeg(),
+                imguiManager.getFisheyeCx(),
+                imguiManager.getFisheyeCy(),
+                imguiManager.getFisheyeK1(),
+                imguiManager.getFisheyeK2(),
+                imguiManager.getFisheyeK3(),
+                imguiManager.getFisheyeK4()
+            );
+        }
+        imguiManager.clearFisheyeParamsChanged();
+    }
+
     // Finalize ImGui frame
     imguiManager.render();
 

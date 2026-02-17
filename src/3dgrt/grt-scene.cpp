@@ -283,6 +283,26 @@ bool GRTScene::initializeEmpty(GLFWwindow* window)
 }
 
 
+void GRTScene::setFisheyeParams(float fov, 
+                                float maxAngle, 
+                                float cx, 
+                                float cy, 
+                                float k1, 
+                                float k2, 
+                                float k3, 
+                                float k4)
+{
+    fisheyeFov_      = fov;
+    fisheyeMaxAngle_ = maxAngle;
+    fisheyeCx_       = cx;
+    fisheyeCy_       = cy;
+    fisheyeK1_       = k1;
+    fisheyeK2_       = k2;
+    fisheyeK3_       = k3;
+    fisheyeK4_       = k4;
+}
+
+
 void GRTScene::setRenderMode(uint32_t mode)
 {
     if (renderMode_ != mode)
@@ -496,11 +516,19 @@ CameraUBO GRTScene::buildCameraUBO() const
 {
     CameraUBO ubo{};
 
-    ubo.viewInverse  = camera.getInverseViewMatrix();
-    ubo.projInverse  = camera.getInverseProjectionMatrix();
-    ubo.nearPlane    = camera.zNear;
-    ubo.farPlane     = camera.zFar;
-    ubo.cameraType   = cameraType_;
+    ubo.viewInverse     = camera.getInverseViewMatrix();
+    ubo.projInverse     = camera.getInverseProjectionMatrix();
+    ubo.nearPlane       = camera.zNear;
+    ubo.farPlane        = camera.zFar;
+    ubo.cameraType      = cameraType_;
+    ubo.fisheyeFov      = fisheyeFov_;
+    ubo.fisheyeMaxAngle = fisheyeMaxAngle_;
+    ubo.fisheyeCx       = fisheyeCx_;
+    ubo.fisheyeCy       = fisheyeCy_;
+    ubo.fisheyeK1       = fisheyeK1_;
+    ubo.fisheyeK2       = fisheyeK2_;
+    ubo.fisheyeK3       = fisheyeK3_;
+    ubo.fisheyeK4       = fisheyeK4_;
 
     return ubo;
 }

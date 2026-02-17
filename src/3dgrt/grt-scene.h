@@ -73,6 +73,16 @@ class GRTScene : public Scene
     uint32_t shDegree_ = 0;
 
     uint32_t cameraType_ = 0;  // 0=pinhole, 1=fisheye
+    
+    // Fisheye parameters (radians, pixel offsets)
+    float fisheyeFov_      = glm::pi<float>();        // default: PI (180°)
+    float fisheyeMaxAngle_ = glm::pi<float>() / 2.f;  // default: PI/2 (90°)
+    float fisheyeCx_       = 0.0f;
+    float fisheyeCy_       = 0.0f;
+    float fisheyeK1_       = 0.0f;
+    float fisheyeK2_       = 0.0f;
+    float fisheyeK3_       = 0.0f;
+    float fisheyeK4_       = 0.0f;
 
 public:
     GRTScene()  = default;
@@ -151,6 +161,15 @@ public:
 
     void setCameraType(uint32_t type) { cameraType_ = type; }
     uint32_t getCameraType() const { return cameraType_; }
+
+    void setFisheyeParams(float fov, 
+                          float maxAngle, 
+                          float cx, 
+                          float cy, 
+                          float k1, 
+                          float k2, 
+                          float k3, 
+                          float k4);
 
 private:
     void computeSceneBounds();
