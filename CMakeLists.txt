@@ -153,9 +153,6 @@ set(SHADER_INCLUDES
     ${SHADER_SOURCE_DIR}/utils/trace.glsl
 )
 
-# Create gaussian shader output directory
-file(MAKE_DIRECTORY ${SHADER_BINARY_DIR}/3dgrt)
-
 # Compile each shader with compile-time defines
 set(SHADER_BINARIES "")
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
