@@ -430,13 +430,7 @@ bool Renderer::createUniformBuffers()
     // Initialize camera push constants with defaults
     cameraPushConstants.viewInverse  = glm::mat4(1.0f);
     cameraPushConstants.projInverse  = glm::mat4(1.0f);
-    cameraPushConstants.position     = glm::vec3(0.0f, 0.0f, 5.0f);
-    cameraPushConstants.fov          = 60.0f;
-    cameraPushConstants.forward      = glm::vec3(0.0f, 0.0f, -1.0f);
-    cameraPushConstants.aspectRatio  = 16.0f / 9.0f;
-    cameraPushConstants.right        = glm::vec3(1.0f, 0.0f, 0.0f);
     cameraPushConstants.nearPlane    = 0.1f;
-    cameraPushConstants.up           = glm::vec3(0.0f, 1.0f, 0.0f);
     cameraPushConstants.farPlane     = 1000.0f;
 
     // Scene Bounds UBO (still uses uniform buffer - less frequently updated)

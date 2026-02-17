@@ -498,13 +498,7 @@ CameraUBO GRTScene::buildCameraUBO() const
 
     ubo.viewInverse  = camera.getInverseViewMatrix();
     ubo.projInverse  = camera.getInverseProjectionMatrix();
-    ubo.position     = camera.position;
-    ubo.fov          = camera.fovY;
-    ubo.forward      = camera.getForward();
-    ubo.aspectRatio  = camera.aspect;
-    ubo.right        = camera.getRight();
     ubo.nearPlane    = camera.zNear;
-    ubo.up           = camera.getUp();
     ubo.farPlane     = camera.zFar;
 
     return ubo;

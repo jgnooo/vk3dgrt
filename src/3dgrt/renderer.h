@@ -25,14 +25,10 @@ struct CameraPushConstants
 {
     glm::mat4 viewInverse;       // Inverse view matrix           - 64 bytes
     glm::mat4 projInverse;       // Inverse projection matrix     - 64 bytes
-    glm::vec3 position;          // Camera position in world space
-    float     fov;               // Field of view
-    glm::vec3 forward;           // Camera forward direction
-    float     aspectRatio;       // Aspect ratio (width/height)
-    glm::vec3 right;             // Camera right direction
-    float     nearPlane;         // Near clipping plane
-    glm::vec3 up;                // Camera up direction
-    float     farPlane;          // Far clipping plane
+    float     nearPlane;         // Near clipping plane           -  4 bytes
+    float     farPlane;          // Far clipping plane            -  4 bytes
+    uint32_t  _pad0 = 0;        // Padding for 16-byte alignment -  4 bytes
+    uint32_t  _pad1 = 0;        //                               -  4 bytes
 
     // SoA Buffer Device Addresses for bindless buffer access
     VkDeviceAddress positionBufferAddress   = 0;  // vec3[] positions BDA
@@ -43,7 +39,7 @@ struct CameraPushConstants
 };
 
 
-static_assert(sizeof(CameraPushConstants) == 232, "CameraPushConstants must match GLSL PushConstants size (192 camera + 40 BDA)");
+static_assert(sizeof(CameraPushConstants) == 184, "CameraPushConstants must match GLSL PushConstants size (144 camera + 40 BDA)");
 
 
 // Alias for backward compatibility

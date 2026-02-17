@@ -33,14 +33,10 @@ struct Camera
 {
     mat4  viewInverse;       // Inverse view matrix
     mat4  projInverse;       // Inverse projection matrix
-    vec3  position;          // Camera position in world space
-    float fov;               // Field of view
-    vec3  forward;           // Camera forward direction
-    float aspectRatio;       // Aspect ratio (width/height)
-    vec3  right;             // Camera right direction
     float nearPlane;         // Near clipping plane
-    vec3  up;                // Camera up direction
     float farPlane;          // Far clipping plane
+    uint  _pad0;             // Padding for 16-byte alignment
+    uint  _pad1;
 };
 
 
