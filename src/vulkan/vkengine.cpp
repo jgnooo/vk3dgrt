@@ -437,6 +437,20 @@ void VkEngine::draw()
         imguiManager.clearFisheyeParamsChanged();
     }
 
+    // Handle DoF parameter changes from GUI
+    if (imguiManager.isDoFEnabledChanged() || imguiManager.isDoFParamsChanged())
+    {
+        if (gs)
+        {
+            gs->setDoFEnabled(imguiManager.isDoFEnabled());
+            gs->setDoFParams(
+                imguiManager.getDoFAperture(),
+                imguiManager.getDoFFocalDistance()
+            );
+        }
+        imguiManager.clearDoFChanged();
+    }
+
     // Finalize ImGui frame
     imguiManager.render();
 

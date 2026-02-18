@@ -8,6 +8,7 @@
 #include "utils/eval.glsl"
 #include "utils/spherical-harmonics.glsl"
 #include "utils/fisheye.glsl"
+#include "utils/dof.glsl"
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 1, rgba16f) uniform image2D outputImage;
@@ -108,6 +109,26 @@ void main()
 
         rayOrigin    = (camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
         rayDirection = normalize((camera.viewInverse * vec4(dirLocal, 0.0)).xyz);
+    }
+
+    if (camera.enableDoF > 0 && camera.aperture > 0.0)
+    {
+        uint seed = pcgHash(pixelCoord.y * launchSize.x + pixelCoord.x + camera.frameIndex * 1009u);
+
+        vec3 doFOrigin, doFDirection;
+        computeDoFRay(
+            rayOrigin, 
+            rayDirection, 
+            camera.aperture, 
+            camera.focalDistance,
+            camera.viewInverse, 
+            seed, 
+            doFOrigin, 
+            doFDirection
+        );
+
+        rayOrigin    = doFOrigin;
+        rayDirection = doFDirection;
     }
 
     vec3  radiance      = vec3(0.0);

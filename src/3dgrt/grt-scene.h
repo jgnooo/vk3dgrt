@@ -73,7 +73,7 @@ class GRTScene : public Scene
     uint32_t shDegree_ = 0;
 
     uint32_t cameraType_ = 0;  // 0=pinhole, 1=fisheye
-    
+
     // Fisheye parameters (radians, pixel offsets)
     float fisheyeFov_      = glm::pi<float>();        // default: PI (180°)
     float fisheyeMaxAngle_ = glm::pi<float>() / 2.f;  // default: PI/2 (90°)
@@ -83,6 +83,12 @@ class GRTScene : public Scene
     float fisheyeK2_       = 0.0f;
     float fisheyeK3_       = 0.0f;
     float fisheyeK4_       = 0.0f;
+
+    // Depth of Field parameters
+    bool     dofEnabled_       = false;
+    float    dofAperture_      = 0.05f;   // Lens radius
+    float    dofFocalDistance_ = 5.0f;    // Focus distance from camera
+    uint32_t frameIndex_       = 0;       // Accumulation frame counter
 
 public:
     GRTScene()  = default;
@@ -162,14 +168,23 @@ public:
     void setCameraType(uint32_t type) { cameraType_ = type; }
     uint32_t getCameraType() const { return cameraType_; }
 
-    void setFisheyeParams(float fov, 
-                          float maxAngle, 
-                          float cx, 
-                          float cy, 
-                          float k1, 
-                          float k2, 
-                          float k3, 
+    void setFisheyeParams(float fov,
+                          float maxAngle,
+                          float cx,
+                          float cy,
+                          float k1,
+                          float k2,
+                          float k3,
                           float k4);
+
+    // Depth of Field settings
+    void     setDoFEnabled(bool enabled);
+    bool     isDoFEnabled() const { return dofEnabled_; }
+    void     setDoFParams(float aperture, float focalDistance);
+    float    getDoFAperture() const { return dofAperture_; }
+    float    getDoFFocalDistance() const { return dofFocalDistance_; }
+    void     resetAccumulation() { frameIndex_ = 0; }
+    uint32_t getFrameIndex() const { return frameIndex_; }
 
 private:
     void computeSceneBounds();

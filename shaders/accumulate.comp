@@ -1,0 +1,36 @@
+#version 460
+layout(set = 0, binding = 0, rgba16f) uniform readonly  image2D currentFrame;
+layout(set = 0, binding = 1, rgba32f) uniform           image2D accumBuffer;
+
+layout(push_constant) uniform PushConstants
+{
+    uint frameIndex; // Current frame index for accumulation
+};
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+
+void main()
+{
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size  = imageSize(currentFrame);
+
+    if (pixel.x >= size.x || pixel.y >= size.y)
+        return;
+
+    vec4 current = imageLoad(currentFrame, pixel);
+
+    if (frameIndex == 0)
+    {
+        // First frame: initialize accumulation buffer with current frame
+        imageStore(accumBuffer, pixel, current);
+    }
+    else
+    {
+        // Subsequent frames: accumulate using running average
+        vec4 accumulated = imageLoad(accumBuffer, pixel);
+        float weight = 1.0 / float(frameIndex + 1);
+        vec4 result = mix(accumulated, current, weight);
+        imageStore(accumBuffer, pixel, result);
+    }
+}

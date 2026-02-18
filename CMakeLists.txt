@@ -142,6 +142,7 @@ set(SHADER_SOURCES
     ${SHADER_SOURCE_DIR}/closest-hit.rchit
     ${SHADER_SOURCE_DIR}/miss.rmiss
     ${SHADER_SOURCE_DIR}/mesh-closest-hit.rchit
+    ${SHADER_SOURCE_DIR}/accumulate.comp
 )
 
 # Include files (not compiled directly, but tracked for dependencies)
@@ -152,6 +153,7 @@ set(SHADER_INCLUDES
     ${SHADER_SOURCE_DIR}/utils/spherical-harmonics.glsl
     ${SHADER_SOURCE_DIR}/utils/trace.glsl
     ${SHADER_SOURCE_DIR}/utils/fisheye.glsl
+    ${SHADER_SOURCE_DIR}/utils/dof.glsl
 )
 
 # Compile each shader with compile-time defines

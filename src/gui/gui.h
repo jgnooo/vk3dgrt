@@ -72,6 +72,13 @@ class ImGuiManager
     // Axis gizmo
     AxisGizmo axisGizmo_;
 
+    // Depth of Field parameters
+    bool  dofEnabled_        = false;
+    bool  dofEnabledChanged_ = false;
+    float dofAperture_       = 0.05f;
+    float dofFocalDistance_  = 5.0f; 
+    bool  dofParamsChanged_  = false;
+
 public:
     void initialize(GLFWwindow* window,
                     VkContext* context,
@@ -148,6 +155,14 @@ public:
     float getFisheyeK4() const { return fisheyeK4_; }
     bool  isFisheyeParamsChanged() const { return fisheyeParamsChanged_; }
     void  clearFisheyeParamsChanged() { fisheyeParamsChanged_ = false; }
+
+    // Depth of Field parameters
+    bool  isDoFEnabled() const { return dofEnabled_; }
+    bool  isDoFEnabledChanged() const { return dofEnabledChanged_; }
+    float getDoFAperture() const { return dofAperture_; }
+    float getDoFFocalDistance() const { return dofFocalDistance_; }
+    bool  isDoFParamsChanged() const { return dofParamsChanged_; }
+    void  clearDoFChanged() { dofEnabledChanged_ = false; dofParamsChanged_ = false; }
 };
 
 #endif // GUI_H

@@ -76,6 +76,12 @@ void GRTScene::recordCommands(VkCommandBuffer cmdBuffer)
     }
 
     renderer.recordRayTrace(cmdBuffer);
+
+    // DoF accumulation: blend current frame into accumulation buffer
+    if (dofEnabled_)
+    {
+        renderer.recordAccumulation(cmdBuffer, frameIndex_);
+    }
 }
 
 
@@ -99,11 +105,29 @@ void GRTScene::update(float deltaTime)
         return;
     }
 
+    // Store previous camera state for movement detection
+    glm::mat4 prevView = camera.getViewMatrix();
+
     cameraController.update(deltaTime);
+
+    // Detect camera movement for DoF accumulation reset
+    glm::mat4 currView = camera.getViewMatrix();
+    bool cameraMovedThisFrame = (prevView != currView);
+
+    if (cameraMovedThisFrame && dofEnabled_)
+    {
+        frameIndex_ = 0;  // Reset accumulation when camera moves
+    }
 
     // Update camera UBO
     CameraUBO cameraUBO = buildCameraUBO();
     renderer.updateCamera(cameraUBO);
+
+    // Increment frame index for DoF accumulation (if enabled and camera stationary)
+    if (dofEnabled_ && !cameraMovedThisFrame)
+    {
+        frameIndex_++;
+    }
 }
 
 
@@ -124,6 +148,9 @@ void GRTScene::onResize(uint32_t width, uint32_t height)
 
     // Resize renderer output
     renderer.resize(width, height);
+
+    // Reset DoF accumulation on resize
+    frameIndex_ = 0;
 }
 
 
@@ -283,13 +310,13 @@ bool GRTScene::initializeEmpty(GLFWwindow* window)
 }
 
 
-void GRTScene::setFisheyeParams(float fov, 
-                                float maxAngle, 
-                                float cx, 
-                                float cy, 
-                                float k1, 
-                                float k2, 
-                                float k3, 
+void GRTScene::setFisheyeParams(float fov,
+                                float maxAngle,
+                                float cx,
+                                float cy,
+                                float k1,
+                                float k2,
+                                float k3,
                                 float k4)
 {
     fisheyeFov_      = fov;
@@ -300,6 +327,27 @@ void GRTScene::setFisheyeParams(float fov,
     fisheyeK2_       = k2;
     fisheyeK3_       = k3;
     fisheyeK4_       = k4;
+}
+
+
+void GRTScene::setDoFEnabled(bool enabled)
+{
+    if (dofEnabled_ != enabled)
+    {
+        dofEnabled_ = enabled;
+        frameIndex_ = 0;  // Reset accumulation when toggling DoF
+    }
+}
+
+
+void GRTScene::setDoFParams(float aperture, float focalDistance)
+{
+    if (dofAperture_ != aperture || dofFocalDistance_ != focalDistance)
+    {
+        dofAperture_      = aperture;
+        dofFocalDistance_ = focalDistance;
+        frameIndex_       = 0;  // Reset accumulation when params change
+    }
 }
 
 
@@ -529,6 +577,10 @@ CameraUBO GRTScene::buildCameraUBO() const
     ubo.fisheyeK2       = fisheyeK2_;
     ubo.fisheyeK3       = fisheyeK3_;
     ubo.fisheyeK4       = fisheyeK4_;
+    ubo.enableDoF       = dofEnabled_ ? 1u : 0u;
+    ubo.aperture        = dofAperture_;
+    ubo.focalDistance   = dofFocalDistance_;
+    ubo.frameIndex      = frameIndex_;
 
     return ubo;
 }

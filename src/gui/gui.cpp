@@ -490,6 +490,34 @@ void ImGuiManager::showRightPanel()
 
             ImGui::TreePop();
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::Text("Depth of Field");
+        ImGui::Spacing();
+
+        if (ImGui::TreeNode("DoF Parameters"))
+        {
+            if (ImGui::Checkbox("Enable##DoF", &dofEnabled_))
+            {
+                dofEnabledChanged_ = true;
+            }
+
+            if (dofEnabled_)
+            {
+                if (ImGui::SliderFloat("Aperture", &dofAperture_, 0.f, 0.5f))
+                {
+                    dofParamsChanged_ = true;
+                }
+                if (ImGui::SliderFloat("Focal Distance", &dofFocalDistance_, 0.1f, 100.0f))
+                {
+                    dofParamsChanged_ = true;
+                }
+            }
+
+            ImGui::TreePop();
+        }
     }
     ImGui::End();
 }

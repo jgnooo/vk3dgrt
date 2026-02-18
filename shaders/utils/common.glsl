@@ -44,7 +44,10 @@ struct Camera
     float fisheyeK2;         // radial distortion coefficient 2
     float fisheyeK3;         // radial distortion coefficient 3
     float fisheyeK4;         // radial distortion coefficient 4
-    uint  _pad0;
+    uint  enableDoF;         // 0: disabled, 1: enabled
+    float aperture;          // Lens radius
+    float focalDistance;     // Focus distance from camera
+    uint  frameIndex;        // Accumulation frame counter
 };
 
 

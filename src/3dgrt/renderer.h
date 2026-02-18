@@ -28,15 +28,22 @@ struct CameraPushConstants
     float     nearPlane;                                   // Near clipping plane                -  4 bytes
     float     farPlane;                                    // Far clipping plane                 -  4 bytes
     uint32_t  cameraType = 0;                              // Camera type (0=pinhole, 1=fisheye) -  4 bytes
-    float     fisheyeFov        = glm::pi<float>();        //                                    -  4 bytes
-    float     fisheyeMaxAngle   = glm::pi<float>() / 2.f;  //                                    -  4 bytes
-    float     fisheyeCx         = 0.0f;                    //                                    -  4 bytes
-    float     fisheyeCy         = 0.0f;                    //                                    -  4 bytes
-    float     fisheyeK1         = 0.0f;                    //                                    -  4 bytes
-    float     fisheyeK2         = 0.0f;                    //                                    -  4 bytes
-    float     fisheyeK3         = 0.0f;                    //                                    -  4 bytes
-    float     fisheyeK4         = 0.0f;                    //                                    -  4 bytes
-    uint32_t  _pad0             = 0;                       //                                    -  4 bytes
+
+    // Fisheye parameters
+    float     fisheyeFov        = glm::pi<float>();      
+    float     fisheyeMaxAngle   = glm::pi<float>() / 2.f;
+    float     fisheyeCx         = 0.0f;                  
+    float     fisheyeCy         = 0.0f;                  
+    float     fisheyeK1         = 0.0f;                  
+    float     fisheyeK2         = 0.0f;                  
+    float     fisheyeK3         = 0.0f;                  
+    float     fisheyeK4         = 0.0f;                  
+    
+    // DoF parameters
+    uint32_t  enableDoF         = 0;       // 0: disabled, 1: enabled
+    float     aperture          = 0.0f;    // Lens radius (0 = pinhole)
+    float     focalDistance     = 5.0f;    // Focus distance from camera
+    uint32_t  frameIndex        = 0;       // Accumulation frame counter
 
     // SoA Buffer Device Addresses for bindless buffer access
     VkDeviceAddress positionBufferAddress   = 0;  // vec3[] positions BDA
@@ -47,7 +54,7 @@ struct CameraPushConstants
 };
 
 
-static_assert(sizeof(CameraPushConstants) == 216, "CameraPushConstants must match GLSL PushConstants size (176 camera + 40 BDA)");
+static_assert(sizeof(CameraPushConstants) == 232, "CameraPushConstants must match GLSL PushConstants size (192 camera + 40 BDA)");
 
 
 // Alias for backward compatibility
@@ -123,6 +130,15 @@ class Renderer
 
     RayTracingPipelineBuilder pipelineBuilder;
 
+    // Accumulation resources (for DoF)
+    AllocatedImage        accumImage;
+    VkDescriptorSetLayout accumDescSetLayout = VK_NULL_HANDLE;
+    VkDescriptorPool      accumDescPool      = VK_NULL_HANDLE;
+    VkDescriptorSet       accumDescSet       = VK_NULL_HANDLE;
+    VkPipelineLayout      accumPipeLayout    = VK_NULL_HANDLE;
+    VkPipeline            accumPipeline      = VK_NULL_HANDLE;
+    ShaderModule          accumShader;
+
 public:
     Renderer()  = default;
     ~Renderer() = default;
@@ -149,6 +165,8 @@ public:
 
     void recordRayTrace(VkCommandBuffer cmdBuffer);
 
+    void recordAccumulation(VkCommandBuffer cmdBuffer, uint32_t frameIndex);
+
     void copyToSwapchain(VkCommandBuffer cmdBuffer,
                          VkImage dstImage,
                          VkExtent2D dstExtent);
@@ -167,12 +185,17 @@ public:
 
     int32_t getHitsPerTrace() const { return MAX_HITS_PER_TRACE; }
 
+    bool isDoFActive() const { return cameraPushConstants.enableDoF > 0; }
+
 private:
     bool createUniformBuffers();
     bool createOutputImage(uint32_t width, uint32_t height);
     bool loadShaders(const std::string& shaderPath);
     bool createPipeline();
     bool createShaderBindingTable();
+    bool createAccumulationResources(uint32_t width, uint32_t height, const std::string& shaderPath);
+    void cleanupAccumulationResources();
+    void updateAccumDescriptors();
 };
 
 }   // namespace vk3dgrt

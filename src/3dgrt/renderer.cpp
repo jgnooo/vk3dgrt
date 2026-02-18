@@ -43,6 +43,13 @@ bool Renderer::initialize(VkContext* context,
         return false;
     }
 
+    // 3.5. Create accumulation resources (for DoF)
+    if (!createAccumulationResources(width, height, shaderPath))
+    {
+        Log::ERR("Render") << "Failed to create accumulation resources";
+        return false;
+    }
+
     // 4. Load shaders
     if (!loadShaders(shaderPath))
     {
@@ -109,6 +116,9 @@ void Renderer::cleanup(VkContext* context)
     closestHitShader.cleanup(device);
     anyHitShader.cleanup(device);
     meshClosestHitShader.cleanup(device);
+
+    // Cleanup accumulation resources
+    cleanupAccumulationResources();
 
     // Cleanup output image
     outputImage.cleanup(context);
@@ -297,13 +307,22 @@ void Renderer::copyToSwapchain(VkCommandBuffer cmdBuffer,
         return;
     }
 
-    // Transition output image to TRANSFER_SRC layout
-    outputImage.transitionLayout(
+    // Choose source image: accumImage (DoF active) or outputImage (normal)
+    bool useAccum = isDoFActive() && accumImage.image != VK_NULL_HANDLE;
+    AllocatedImage& srcImage = useAccum ? accumImage : outputImage;
+
+    // Transition source image to TRANSFER_SRC layout
+    VkPipelineStageFlags srcStage = useAccum
+        ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+        : VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+    VkAccessFlags srcAccess = VK_ACCESS_SHADER_WRITE_BIT;
+
+    srcImage.transitionLayout(
         cmdBuffer,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+        srcStage,
         VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_SHADER_WRITE_BIT,
+        srcAccess,
         VK_ACCESS_TRANSFER_READ_BIT
     );
 
@@ -336,7 +355,7 @@ void Renderer::copyToSwapchain(VkCommandBuffer cmdBuffer,
         1, &dstBarrier
     );
 
-    // Blit from output image to swapchain image
+    // Blit from source image to swapchain image
     VkImageBlit blitRegion{
         .srcSubresource = {
             .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -346,8 +365,8 @@ void Renderer::copyToSwapchain(VkCommandBuffer cmdBuffer,
         },
         .srcOffsets = {
             {0, 0, 0},
-            {static_cast<int32_t>(outputImage.extent.width),
-             static_cast<int32_t>(outputImage.extent.height),
+            {static_cast<int32_t>(srcImage.extent.width),
+             static_cast<int32_t>(srcImage.extent.height),
              1}
         },
         .dstSubresource = {
@@ -366,13 +385,13 @@ void Renderer::copyToSwapchain(VkCommandBuffer cmdBuffer,
 
     vkCmdBlitImage(
         cmdBuffer,
-        outputImage.image,
+        srcImage.image,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         dstImage,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1,
         &blitRegion,
-        VK_FILTER_LINEAR  // Linear filtering for any scaling
+        VK_FILTER_LINEAR
     );
 
     // Transition destination image to PRESENT_SRC layout
@@ -411,6 +430,9 @@ bool Renderer::resize(uint32_t width, uint32_t height)
     // Cleanup old output image
     outputImage.cleanup(ctx);
 
+    // Cleanup old accumulation image
+    accumImage.cleanup(ctx);
+
     // Create new output image
     if (!createOutputImage(width, height))
     {
@@ -418,8 +440,18 @@ bool Renderer::resize(uint32_t width, uint32_t height)
         return false;
     }
 
+    // Create new accumulation image
+    accumImage.create(
+        ctx, width, height,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        ImageUsage::STORAGE
+    );
+
     // Update descriptor for output image (only binding 1 changed)
     rtDescriptorSet.updateOutputImage(outputImage.imageView);
+
+    // Update accumulation descriptors
+    updateAccumDescriptors();
 
     return true;
 }
@@ -566,5 +598,262 @@ bool Renderer::createShaderBindingTable()
 
     return true;
 }
+
+
+void Renderer::recordAccumulation(VkCommandBuffer cmdBuffer, uint32_t frameIndex)
+{
+    if (!initialized || accumPipeline == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    // outputImage is already in GENERAL layout from recordRayTrace
+    // Transition accumImage to GENERAL for compute shader access
+    accumImage.transitionLayout(
+        cmdBuffer,
+        VK_IMAGE_LAYOUT_GENERAL,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT
+    );
+
+    // Memory barrier: ensure RT writes to outputImage are visible to compute reads
+    VkMemoryBarrier memBarrier{
+        .sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+    };
+
+    vkCmdPipelineBarrier(
+        cmdBuffer,
+        VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1, &memBarrier,
+        0, nullptr,
+        0, nullptr
+    );
+
+    // Bind compute pipeline
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, accumPipeline);
+
+    // Bind accumulation descriptor set
+    vkCmdBindDescriptorSets(
+        cmdBuffer,
+        VK_PIPELINE_BIND_POINT_COMPUTE,
+        accumPipeLayout,
+        0, 1, &accumDescSet,
+        0, nullptr
+    );
+
+    // Push frame index
+    vkCmdPushConstants(
+        cmdBuffer,
+        accumPipeLayout,
+        VK_SHADER_STAGE_COMPUTE_BIT,
+        0,
+        sizeof(uint32_t),
+        &frameIndex
+    );
+
+    // Dispatch compute shader (16x16 workgroups)
+    uint32_t groupCountX = (outputImage.extent.width  + 15) / 16;
+    uint32_t groupCountY = (outputImage.extent.height + 15) / 16;
+    vkCmdDispatch(cmdBuffer, groupCountX, groupCountY, 1);
+}
+
+
+bool Renderer::createAccumulationResources(uint32_t width, uint32_t height, const std::string& shaderPath)
+{
+    VkDevice device = ctx->getDevice();
+
+    // 1. Create accumulation image (rgba32f for high-precision accumulation)
+    accumImage.create(
+        ctx, width, height,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        ImageUsage::STORAGE
+    );
+
+    if (accumImage.image == VK_NULL_HANDLE)
+    {
+        Log::ERR("Render") << "Failed to create accumulation image";
+        return false;
+    }
+
+    // 2. Load accumulation compute shader
+    try
+    {
+        std::string accumFile = shaderPath + "accumulate.comp.spv";
+        accumShader.createFromFile(device, accumFile);
+    }
+    catch (const std::exception& e)
+    {
+        Log::ERR("Render") << "Accumulation shader loading failed: " << e.what();
+        return false;
+    }
+
+    // 3. Create descriptor set layout (2 storage images)
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {{
+        {
+            .binding         = 0,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .descriptorCount = 1,
+            .stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT
+        },
+        {
+            .binding         = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .descriptorCount = 1,
+            .stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT
+        }
+    }};
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = static_cast<uint32_t>(bindings.size()),
+        .pBindings    = bindings.data()
+    };
+
+    VK_CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &accumDescSetLayout));
+
+    // 4. Create descriptor pool
+    VkDescriptorPoolSize poolSize{
+        .type            = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        .descriptorCount = 2
+    };
+
+    VkDescriptorPoolCreateInfo poolInfo{
+        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets       = 1,
+        .poolSizeCount = 1,
+        .pPoolSizes    = &poolSize
+    };
+
+    VK_CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &accumDescPool));
+
+    // 5. Allocate descriptor set
+    VkDescriptorSetAllocateInfo allocInfo{
+        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool     = accumDescPool,
+        .descriptorSetCount = 1,
+        .pSetLayouts        = &accumDescSetLayout
+    };
+
+    VK_CHECK(vkAllocateDescriptorSets(device, &allocInfo, &accumDescSet));
+
+    // 6. Write descriptors
+    updateAccumDescriptors();
+
+    // 7. Create pipeline layout with push constant (uint frameIndex)
+    VkPushConstantRange pushRange{
+        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+        .offset     = 0,
+        .size       = sizeof(uint32_t)
+    };
+
+    VkPipelineLayoutCreateInfo pipeLayoutInfo{
+        .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount         = 1,
+        .pSetLayouts            = &accumDescSetLayout,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges    = &pushRange
+    };
+
+    VK_CHECK(vkCreatePipelineLayout(device, &pipeLayoutInfo, nullptr, &accumPipeLayout));
+
+    // 8. Create compute pipeline
+    VkComputePipelineCreateInfo computeInfo{
+        .sType  = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+        .stage  = {
+            .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage  = VK_SHADER_STAGE_COMPUTE_BIT,
+            .module = accumShader.module,
+            .pName  = "main"
+        },
+        .layout = accumPipeLayout
+    };
+
+    VK_CHECK(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computeInfo, nullptr, &accumPipeline));
+
+    Log::OK("Render") << "Accumulation pipeline created";
+
+    return true;
+}
+
+
+void Renderer::cleanupAccumulationResources()
+{
+    if (!ctx)
+    {
+        return;
+    }
+
+    VkDevice device = ctx->getDevice();
+
+    if (accumPipeline != VK_NULL_HANDLE)
+    {
+        vkDestroyPipeline(device, accumPipeline, nullptr);
+        accumPipeline = VK_NULL_HANDLE;
+    }
+
+    if (accumPipeLayout != VK_NULL_HANDLE)
+    {
+        vkDestroyPipelineLayout(device, accumPipeLayout, nullptr);
+        accumPipeLayout = VK_NULL_HANDLE;
+    }
+
+    if (accumDescPool != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorPool(device, accumDescPool, nullptr);
+        accumDescPool = VK_NULL_HANDLE;
+        accumDescSet  = VK_NULL_HANDLE;  // Implicitly freed with pool
+    }
+
+    if (accumDescSetLayout != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorSetLayout(device, accumDescSetLayout, nullptr);
+        accumDescSetLayout = VK_NULL_HANDLE;
+    }
+
+    accumShader.cleanup(device);
+    accumImage.cleanup(ctx);
+}
+
+
+void Renderer::updateAccumDescriptors()
+{
+    VkDescriptorImageInfo outputInfo{
+        .imageView   = outputImage.imageView,
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+    };
+
+    VkDescriptorImageInfo accumInfo{
+        .imageView   = accumImage.imageView,
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+    };
+
+    std::array<VkWriteDescriptorSet, 2> writes = {{
+        {
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet          = accumDescSet,
+            .dstBinding      = 0,
+            .descriptorCount = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .pImageInfo      = &outputInfo
+        },
+        {
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet          = accumDescSet,
+            .dstBinding      = 1,
+            .descriptorCount = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .pImageInfo      = &accumInfo
+        }
+    }};
+
+    vkUpdateDescriptorSets(ctx->getDevice(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+}
+
 
 }   // namespace vk3dgrt
