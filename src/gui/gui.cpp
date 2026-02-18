@@ -2,6 +2,7 @@
 #include "vulkan/vkengine.h"
 #include "vulkan/vkerror.h"
 #include "3dgrt/grt-scene.h"
+#include "3dgrt/mesh-data.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -201,57 +202,13 @@ void ImGuiManager::showRightPanel()
         // ── Assets Section ──
         if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            // Mesh Models
-            if (ImGui::TreeNode("Mesh Models"))
+            if (ImGui::TreeNode("Load Mesh"))
             {
-                // Teapot: [Load] button + per-instance [X] remove buttons
-                uint32_t meshCount = scene_ ? scene_->getMeshCount() : 0;
-
-                float availWidth    = ImGui::GetContentRegionAvail().x;
-                float buttonSpacing = ImGui::GetStyle().ItemSpacing.x;
-                float removeWidth   = ImGui::CalcTextSize("X").x + ImGui::GetStyle().FramePadding.x * 2.0f;
-
-                if (meshCount == 0)
+                if (ImGui::Button("+ teapot.obj", ImVec2(-1.0f, 0.0f)))
                 {
-                    // No meshes — show load button
-                    if (ImGui::Button("teapot.obj", ImVec2(-1.0f, 0.0f)))
-                    {
-                        insertTeapot_ = true;
-                    }
+                    insertTeapot_ = true;
                 }
-                else
-                {
-                    // Show each inserted mesh with a remove button
-                    const auto& meshes = scene_->getMeshInstances();
-                    for (uint32_t i = 0; i < meshCount; ++i)
-                    {
-                        ImGui::PushID(static_cast<int>(i));
-
-                        // Mesh name label
-                        float labelWidth = availWidth - removeWidth - buttonSpacing;
-                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-                        ImGui::Button(meshes[i].name.c_str(), ImVec2(labelWidth, 0.0f));
-                        ImGui::PopStyleColor();
-                        
-                        // Remove button
-                        ImGui::SameLine(0.0f, buttonSpacing);
-                        if (ImGui::Button("X", ImVec2(removeWidth, 0.0f)))
-                        {
-                            removeMeshIndex_ = static_cast<int>(i);
-                        }
-
-                        ImGui::PopID();
-
-                        ImGui::Spacing();
-                    }
-
-                    // Add more button
-                    if (ImGui::Button("+ teapot.obj", ImVec2(-1.0f, 0.0f)))
-                    {
-                        insertTeapot_ = true;
-                    }
-                }
-
+                
                 ImGui::TreePop();
             }
         }
@@ -405,25 +362,65 @@ void ImGuiManager::showRightPanel()
                 ImGui::TextDisabled("No SH data in scene");
             }
 
-            // Reflection
+            // Meshes
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::Text("Reflection");
+            ImGui::Text("Meshes");
             ImGui::Spacing();
 
-            if (ImGui::Checkbox("Enable##Reflection", &reflectEnabled_))
             {
-                reflectEnabledChanged_ = true;
-            }
+                uint32_t meshCount = scene_ ? scene_->getMeshCount() : 0;
 
-            if (reflectEnabled_)
-            {
-                ImGui::Spacing();
-                ImGui::SliderInt("Max Bounces", &maxBounces_, 1, 3);
-                if (ImGui::IsItemDeactivatedAfterEdit())
+                if (meshCount == 0)
                 {
-                    maxBouncesChanged_ = true;
+                    ImGui::TextDisabled("No meshes (add from Assets)");
+                }
+                else
+                {
+                    const auto& meshes = scene_->getMeshInstances();
+
+                    float availWidth    = ImGui::GetContentRegionAvail().x;
+                    float buttonSpacing = ImGui::GetStyle().ItemSpacing.x;
+                    const char* materialLabels[] = {"Diffuse", "Reflective"};
+
+                    float removeWidth = ImGui::CalcTextSize("X").x
+                                      + ImGui::GetStyle().FramePadding.x * 2.0f;
+                    float comboWidth  = availWidth * 0.38f;
+                    float nameWidth   = availWidth - comboWidth - removeWidth
+                                      - buttonSpacing * 2.0f;
+
+                    for (uint32_t i = 0; i < meshCount; ++i)
+                    {
+                        ImGui::PushID(static_cast<int>(i));
+
+                        int matType = static_cast<int>(meshes[i].material.type);
+
+                        // Mesh name label (non-interactive)
+                        ImGui::PushStyleColor(ImGuiCol_Button,
+                                              ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
+                        ImGui::Button(meshes[i].name.c_str(), ImVec2(nameWidth, 0.0f));
+                        ImGui::PopStyleColor();
+
+                        // Material type combo
+                        ImGui::SameLine(0.0f, buttonSpacing);
+                        ImGui::SetNextItemWidth(comboWidth);
+                        if (ImGui::Combo("##mat", &matType, materialLabels, 2))
+                        {
+                            meshMaterialChangeIdx_ = static_cast<int>(i);
+                            meshMaterialNewType_   = matType;
+                        }
+
+                        // Delete button
+                        ImGui::SameLine(0.0f, buttonSpacing);
+                        if (ImGui::Button("X", ImVec2(removeWidth, 0.0f)))
+                        {
+                            removeMeshIndex_ = static_cast<int>(i);
+                        }
+
+                        ImGui::PopID();
+                        ImGui::Spacing();
+                    }
                 }
             }
         }

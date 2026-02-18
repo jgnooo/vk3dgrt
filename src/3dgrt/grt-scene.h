@@ -159,6 +159,9 @@ public:
     uint32_t getMeshCount() const { return static_cast<uint32_t>(meshInstances_.size()); }
     const std::vector<MeshInstance>& getMeshInstances() const { return meshInstances_; }
 
+    // Per-mesh material type
+    void setMeshMaterial(uint32_t index, MeshMaterialType type);
+
     // Reflection settings
     void setReflectionEnabled(bool enabled);
     bool isReflectionEnabled() const { return reflectionEnabled_; }

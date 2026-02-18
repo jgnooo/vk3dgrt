@@ -362,26 +362,17 @@ void VkEngine::draw()
         imguiManager.clearSHDegreeChanged();
     }
 
-    // Handle reflection toggle from GUI
-    if (imguiManager.isReflectionEnabledChanged())
+    // Handle per-mesh material change from GUI
+    if (imguiManager.getMeshMaterialChangeIndex() >= 0)
     {
         auto* gs = sceneManager.getGRTScene();
         if (gs)
         {
-            gs->setReflectionEnabled(imguiManager.isReflectionEnabled());
+            gs->setMeshMaterial(
+                static_cast<uint32_t>(imguiManager.getMeshMaterialChangeIndex()),
+                static_cast<vk3dgrt::MeshMaterialType>(imguiManager.getMeshMaterialNewType()));
         }
-        imguiManager.clearReflectionEnabledChanged();
-    }
-
-    // Handle max bounces changes from GUI
-    if (imguiManager.isMaxBouncesChanged())
-    {
-        auto* gs = sceneManager.getGRTScene();
-        if (gs)
-        {
-            gs->setMaxBounces(static_cast<uint32_t>(imguiManager.getMaxBounces()));
-        }
-        imguiManager.clearMaxBouncesChanged();
+        imguiManager.clearMeshMaterialChange();
     }
 
     // Handle mesh insertion from GUI

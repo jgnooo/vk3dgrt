@@ -5,7 +5,7 @@
 #include <filesystem>
 
 
-constexpr const char* DEFAULT_PLY_PATH = DATA_DIR "/train.ply";
+constexpr const char* DEFAULT_PLY_PATH = DATA_DIR "/cactus.ply";
 
 
 int main(int argc, char* argv[])

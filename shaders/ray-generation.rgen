@@ -199,11 +199,7 @@ void main()
             sceneBounds.enableSpecular > 0, sceneBounds.specularShininess
         );
 
-        uint effectiveType = (sceneBounds.enableReflection > 0)
-                           ? MATERIAL_REFLECTIVE
-                           : MATERIAL_DIFFUSE;
-
-        if (effectiveType == MATERIAL_REFLECTIVE)
+        if (meshPayload.materialType == MATERIAL_REFLECTIVE)
         {
             vec3  reflDir     = reflect(currentDirection, meshPayload.normal);
             float reflWeight  = meshPayload.reflectivity * transmittance;

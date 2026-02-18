@@ -502,6 +502,30 @@ std::vector<MeshTLASInstance> GRTScene::buildMeshTLASInstances() const
 }
 
 
+void GRTScene::setMeshMaterial(uint32_t index, MeshMaterialType type)
+{
+    if (index >= meshInstances_.size())
+    {
+        return;
+    }
+
+    if (meshInstances_[index].material.type == type)
+    {
+        return;
+    }
+
+    meshInstances_[index].material.type = type;
+
+    // Rebuild mesh GPU resources and update UBO
+    if (initialized)
+    {
+        rebuildMeshResources();
+        SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+        renderer.updateSceneBounds(boundsUBO);
+    }
+}
+
+
 void GRTScene::setReflectionEnabled(bool enabled)
 {
     if (reflectionEnabled_ != enabled)
@@ -600,8 +624,17 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
     ubo.shDegree     = shDegree_;
     ubo.kernelDegree = kernelDegree_;
 
-    // Reflection parameters
-    ubo.enableReflection = reflectionEnabled_ ? 1 : 0;
+    // Reflection parameters (derived from per-mesh material types)
+    bool anyReflective = false;
+    for (const auto& mesh : meshInstances_)
+    {
+        if (mesh.material.type == MeshMaterialType::REFLECTIVE)
+        {
+            anyReflective = true;
+            break;
+        }
+    }
+    ubo.enableReflection = anyReflective ? 1 : 0;
     ubo.maxBounces       = maxBounces_;
     ubo.meshCount        = static_cast<uint32_t>(meshInstances_.size());
     ubo._pad0            = 0;
