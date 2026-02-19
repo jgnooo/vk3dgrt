@@ -168,33 +168,14 @@ void CameraController::update(float deltaTime)
         return;
     }
 
-    // Handle FPS movement (WASD keys)
-    if (mode_ == CameraMode::FPS && isFpsActive_)
-    {
-        handleFpsMovement(deltaTime);
-    }
-}
-
-
-void CameraController::setMode(CameraMode mode)
-{
-    if (mode_ == mode)
+    // Skip keyboard movement only when ImGui text input is active
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantTextInput)
     {
         return;
     }
 
-    mode_ = mode;
-
-    if (mode_ == CameraMode::FPS)
-    {
-        // Initialize FPS angles from current camera orientation
-        updateFpsAnglesFromCamera();
-    }
-    else
-    {
-        // Initialize orbit parameters from current camera
-        updateOrbitAnglesFromCamera();
-    }
+    handleKeyboardMovement(deltaTime);
 }
 
 
@@ -212,9 +193,6 @@ void CameraController::resetToDefault()
     orbitYaw_      = 0.0f;
     orbitPitch_    = 0.0f;
     orbitDistance_ = 5.0f;
-
-    fpsYaw_   = -90.0f;
-    fpsPitch_ = 0.0f;
 }
 
 
@@ -287,20 +265,10 @@ void CameraController::mouseButtonCallback(GLFWwindow* window, int button, int a
     }
     else if (button == GLFW_MOUSE_BUTTON_RIGHT)
     {
-        controller->isFpsActive_ = (action == GLFW_PRESS);
+        controller->isPickingTarget_ = (action == GLFW_PRESS);
         if (action == GLFW_PRESS)
         {
             controller->firstMouse_ = true;
-            // Hide and capture cursor for FPS mode
-            if (controller->mode_ == CameraMode::FPS)
-            {
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            }
-        }
-        else if (action == GLFW_RELEASE)
-        {
-            // Restore cursor
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
     }
 }
@@ -340,23 +308,17 @@ void CameraController::cursorPosCallback(GLFWwindow* window, double xpos, double
     controller->lastMouseX_ = x;
     controller->lastMouseY_ = y;
 
-    if (controller->mode_ == CameraMode::ORBIT)
+    if (controller->isOrbiting_)
     {
-        if (controller->isOrbiting_)
-        {
-            controller->handleOrbit(deltaX, deltaY);
-        }
-        else if (controller->isPanning_)
-        {
-            controller->handlePan(deltaX, deltaY);
-        }
+        controller->handleOrbit(deltaX, deltaY);
     }
-    else if (controller->mode_ == CameraMode::FPS)
+    else if (controller->isPanning_)
     {
-        if (controller->isFpsActive_)
-        {
-            controller->handleFpsLook(deltaX, deltaY);
-        }
+        controller->handlePan(deltaX, deltaY);
+    }
+    else if (controller->isPickingTarget_)
+    {
+        controller->handlePickTarget(deltaX, deltaY);
     }
 }
 
@@ -399,19 +361,6 @@ void CameraController::keyCallback(GLFWwindow* window, int key, int scancode, in
     if (!controller)
     {
         return;
-    }
-
-    // Toggle camera mode with Tab key
-    if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
-    {
-        if (controller->mode_ == CameraMode::ORBIT)
-        {
-            controller->setMode(CameraMode::FPS);
-        }
-        else
-        {
-            controller->setMode(CameraMode::ORBIT);
-        }
     }
 
     // Reset camera with Home key
@@ -465,23 +414,32 @@ void CameraController::handleZoom(float delta)
         return;
     }
 
-    if (mode_ == CameraMode::ORBIT)
-    {
-        // Zoom by changing distance
-        orbitDistance_ -= delta * zoomSensitivity_ * orbitDistance_ * 0.1f;
-        orbitDistance_ = std::clamp(orbitDistance_, kMinDistance, kMaxDistance);
-        updateOrbitPosition();
-    }
-    else
-    {
-        // In FPS mode, move forward/backward
-        glm::vec3 forward = camera_->getForward();
-        camera_->position += forward * delta * zoomSensitivity_;
-    }
+    orbitDistance_ -= delta * zoomSensitivity_ * orbitDistance_ * 0.1f;
+    orbitDistance_ = std::clamp(orbitDistance_, kMinDistance, kMaxDistance);
+    updateOrbitPosition();
 }
 
 
-void CameraController::handleFpsMovement(float deltaTime)
+void CameraController::handlePickTarget(float deltaX, float deltaY)
+{
+    if (!camera_)
+    {
+        return;
+    }
+
+    glm::vec3 right = camera_->getRight();
+    glm::vec3 up    = camera_->getUp();
+
+    // Move orbit target in screen-space direction, scaled by distance
+    float scale      = orbitDistance_ * pickTargetSensitivity_;
+    glm::vec3 offset = -right * deltaX * scale + up * deltaY * scale;
+
+    camera_->target += offset;
+    updateOrbitPosition();
+}
+
+
+void CameraController::handleKeyboardMovement(float deltaTime)
 {
     if (!camera_ || !window_)
     {
@@ -495,7 +453,6 @@ void CameraController::handleFpsMovement(float deltaTime)
     float velocity = movementSpeed_ * deltaTime;
     glm::vec3 movement(0.0f);
 
-    // WASD movement
     if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
     {
         movement += forward * velocity;
@@ -512,51 +469,25 @@ void CameraController::handleFpsMovement(float deltaTime)
     {
         movement += right * velocity;
     }
-
-    // Q/E for up/down
     if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
-    {
-        movement -= worldUp * velocity;
-    }
-    if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
     {
         movement += worldUp * velocity;
     }
+    if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        movement -= worldUp * velocity;
+    }
 
-    // Shift to speed up
     if (glfwGetKey(window_, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
         movement *= 3.0f;
     }
 
-    camera_->position += movement;
-    camera_->target   += movement;
-}
-
-
-void CameraController::handleFpsLook(float deltaX, float deltaY)
-{
-    if (!camera_)
+    if (glm::length(movement) > 0.0f)
     {
-        return;
+        camera_->position += movement;
+        camera_->target   += movement;
     }
-
-    // Drag right -> look right, drag up -> look up
-    fpsYaw_   -= deltaX * lookSensitivity_;
-    fpsPitch_ -= deltaY * lookSensitivity_;
-
-    // Clamp pitch
-    fpsPitch_ = std::clamp(fpsPitch_, kMinPitch, kMaxPitch);
-
-    // Calculate new forward direction
-    glm::vec3 forward;
-    forward.x = std::cos(glm::radians(fpsYaw_)) * std::cos(glm::radians(fpsPitch_));
-    forward.y = std::sin(glm::radians(fpsPitch_));
-    forward.z = std::sin(glm::radians(fpsYaw_)) * std::cos(glm::radians(fpsPitch_));
-    forward   = glm::normalize(forward);
-
-    // Update target based on position and forward
-    camera_->target = camera_->position + forward;
 }
 
 
@@ -577,21 +508,6 @@ void CameraController::updateOrbitPosition()
     offset.z = std::cos(pitchRad) * std::cos(yawRad);
 
     camera_->position = camera_->target + offset * orbitDistance_;
-}
-
-
-void CameraController::updateFpsAnglesFromCamera()
-{
-    if (!camera_)
-    {
-        return;
-    }
-
-    glm::vec3 forward = camera_->getForward();
-
-    // Calculate yaw and pitch from forward vector
-    fpsPitch_ = glm::degrees(std::asin(forward.y));
-    fpsYaw_   = glm::degrees(std::atan2(forward.z, forward.x));
 }
 
 

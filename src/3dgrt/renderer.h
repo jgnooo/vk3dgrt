@@ -61,9 +61,9 @@ static_assert(sizeof(CameraPushConstants) == 232, "CameraPushConstants must matc
 using CameraUBO = CameraPushConstants;
 
 
-constexpr uint32_t RENDER_MODE_GS       = 0;  // Gaussian Splatting (default)
-constexpr uint32_t RENDER_MODE_POINT    = 1;  // Point visualization
-constexpr uint32_t RENDER_MODE_SPLAT    = 2;  // Splat visualization
+constexpr uint32_t VISUALIZE_MODE_GS       = 0;  // Gaussian Splatting (default)
+constexpr uint32_t VISUALIZE_MODE_POINT    = 1;  // Point visualization
+constexpr uint32_t VISUALIZE_MODE_SPLAT    = 2;  // Splat visualization
 
 
 struct SceneBoundsUBO
@@ -74,7 +74,7 @@ struct SceneBoundsUBO
     glm::vec3 maxBound;          // Maximum corner of scene AABB
     float     tMax;              // Maximum ray parameter
     uint32_t  hasSH;             // 1 if SH coefficients are available, 0 otherwise
-    uint32_t  renderMode;        // 0: GS, 1: Point, 2: Splat
+    uint32_t  visualizeMode;     // 0: GS, 1: Point, 2: Splat
     uint32_t  shDegree;          // SH evaluation degree (0=off, 1-3)
     uint32_t  kernelDegree;      // Kernel degree: 1=standard (n=1), 2=generalized (n=2)
 

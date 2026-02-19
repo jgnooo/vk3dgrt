@@ -513,18 +513,18 @@ void ImGuiManager::showRightPanel()
 
             cameraType_ = static_cast<uint32_t>(camType);
 
-            // Render Mode
+            // Visualize Mode
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::Text("Render Mode");
+            ImGui::Text("Visualize Mode");
             ImGui::Spacing();
 
-            int mode = static_cast<int>(renderMode_);
+            int mode = static_cast<int>(visualizeMode_);
 
             {
                 const char* labels[]   = {"GS", "Point", "Splat"};
-                const int   values[]   = {GUI_RENDER_MODE_GS, GUI_RENDER_MODE_POINT, GUI_RENDER_MODE_SPLAT};
+                const int   values[]   = {GUI_VISUALIZE_MODE_GS, GUI_VISUALIZE_MODE_POINT, GUI_VISUALIZE_MODE_SPLAT};
                 constexpr int kCount   = 3;
 
                 float radioHeight  = ImGui::GetFrameHeight();
@@ -552,12 +552,12 @@ void ImGuiManager::showRightPanel()
                     }
                     if (ImGui::RadioButton(labels[i], &mode, values[i]))
                     {
-                        renderModeChanged_ = true;
+                        visualizeModeChanged_ = true;
                     }
                 }
             }
 
-            renderMode_ = static_cast<uint32_t>(mode);
+            visualizeMode_ = static_cast<uint32_t>(mode);
 
             // SH Degree - segmented button style
             ImGui::Spacing();

@@ -57,43 +57,30 @@ public:
 };
 
 
-enum class CameraMode
-{
-    ORBIT,      // Orbit around target (default)
-    FPS         // First-person shooter mode
-};
-
-
 class CameraController
 {
     GLFWwindow* window_ = nullptr;
     Camera*     camera_ = nullptr;
 
-    CameraMode mode_ = CameraMode::ORBIT;
-
     // Mouse state
-    bool  isOrbiting_    = false;
-    bool  isPanning_     = false;
-    bool  isFpsActive_   = false;
-    float lastMouseX_    = 0.0f;
-    float lastMouseY_    = 0.0f;
-    bool  firstMouse_    = true;
+    bool  isOrbiting_       = false;
+    bool  isPanning_        = false;
+    bool  isPickingTarget_  = false;
+    float lastMouseX_       = 0.0f;
+    float lastMouseY_       = 0.0f;
+    bool  firstMouse_       = true;
 
     // Orbit parameters
     float orbitYaw_      = 0.0f;     // Horizontal angle in degrees
     float orbitPitch_    = 0.0f;     // Vertical angle in degrees
-    float orbitDistance_ = 5.0f;    // Distance from target
-
-    // FPS mode angles
-    float fpsYaw_        = -90.0f;   // Facing -Z by default
-    float fpsPitch_      = 0.0f;
+    float orbitDistance_ = 5.0f;     // Distance from target
 
     // Sensitivity settings
-    float orbitSensitivity_ = 0.5f;
-    float panSensitivity_   = 0.01f;
-    float zoomSensitivity_  = 0.5f;
-    float movementSpeed_    = 5.0f;
-    float lookSensitivity_  = 0.1f;
+    float orbitSensitivity_      = 0.5f;
+    float panSensitivity_        = 0.01f;
+    float zoomSensitivity_       = 0.5f;
+    float pickTargetSensitivity_ = 0.003f;
+    float movementSpeed_         = 3.0f;
 
     // Pitch limits (to prevent gimbal lock)
     static constexpr float kMinPitch = -89.0f;
@@ -111,28 +98,20 @@ public:
     void initialize(GLFWwindow* window, Camera* camera);
     void shutdown();
 
-    // Per-frame update
+    // Per-frame update (reserved for future use)
     void update(float deltaTime);
-
-    // Mode control
-    void setMode(CameraMode mode);
-    CameraMode getMode() const { return mode_; }
 
     // Sensitivity settings
     void setOrbitSensitivity(float sensitivity) { orbitSensitivity_ = sensitivity; }
     void setPanSensitivity(float sensitivity)   { panSensitivity_ = sensitivity; }
     void setZoomSensitivity(float sensitivity)  { zoomSensitivity_ = sensitivity; }
-    void setMovementSpeed(float speed)          { movementSpeed_ = speed; }
-    void setLookSensitivity(float sensitivity)  { lookSensitivity_ = sensitivity; }
 
     float getOrbitSensitivity() const { return orbitSensitivity_; }
     float getPanSensitivity() const   { return panSensitivity_; }
     float getZoomSensitivity() const  { return zoomSensitivity_; }
-    float getMovementSpeed() const    { return movementSpeed_; }
-    float getLookSensitivity() const  { return lookSensitivity_; }
 
     // Check if controller is capturing input
-    bool isCapturingInput() const { return isOrbiting_ || isPanning_ || isFpsActive_; }
+    bool isCapturingInput() const { return isOrbiting_ || isPanning_ || isPickingTarget_; }
 
     // Reset camera to default position
     void resetToDefault();
@@ -151,10 +130,9 @@ private:
     void handleOrbit(float deltaX, float deltaY);
     void handlePan(float deltaX, float deltaY);
     void handleZoom(float delta);
-    void handleFpsMovement(float deltaTime);
-    void handleFpsLook(float deltaX, float deltaY);
+    void handlePickTarget(float deltaX, float deltaY);
+    void handleKeyboardMovement(float deltaTime);
     void updateOrbitPosition();
-    void updateFpsAnglesFromCamera();
     void updateOrbitAnglesFromCamera();
 };
 

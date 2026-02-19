@@ -79,11 +79,11 @@ const float TRANSMITTANCE_THRESHOLD = 0.01;
 
 
 // --------------------------------------------------- //
-//  Render Mode Constants
+//  Visualize Mode Constants
 // --------------------------------------------------- //
-#define RENDER_MODE_GS      0   // Gaussian Splatting (default)
-#define RENDER_MODE_POINT   1   // Point visualization
-#define RENDER_MODE_SPLAT   2   // Splat visualization
+#define VISUALIZE_MODE_GS      0   // Gaussian Splatting (default)
+#define VISUALIZE_MODE_POINT   1   // Point visualization
+#define VISUALIZE_MODE_SPLAT   2   // Splat visualization
 
 
 // --------------------------------------------------- //
@@ -137,7 +137,7 @@ struct SceneBounds
     vec3  maxBound;       // Maximum corner of scene AABB
     float tMax;           // Maximum ray parameter
     uint  hasSH;          // 1 if SH coefficients are available, 0 otherwise
-    uint  renderMode;     // 0: GS, 1: Point, 2: Splat
+    uint  visualizeMode;  // 0: GS, 1: Point, 2: Splat
     uint  shDegree;       // SH evaluation degree (0=off, 1-3)
     uint  kernelDegree;   // Kernel degree: 1=standard (n=1), 2=generalized (n=2)
 

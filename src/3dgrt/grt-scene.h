@@ -66,8 +66,8 @@ class GRTScene : public Scene
     glm::vec3 minBound = glm::vec3(0.0f);
     glm::vec3 maxBound = glm::vec3(0.0f);
 
-    // Render mode
-    uint32_t renderMode_ = RENDER_MODE_GS;
+    // Visualize mode
+    uint32_t visualizeMode_ = VISUALIZE_MODE_GS;
 
     // Kernel degree (1=standard, 2=generalized)
     uint32_t kernelDegree_ = DEFAULT_KERNEL_DEGREE;
@@ -151,9 +151,9 @@ public:
 
     const Renderer& getRenderer() const { return renderer; }
 
-    void setRenderMode(uint32_t mode);
+    void setVisualizeMode(uint32_t mode);
 
-    uint32_t getRenderMode() const { return renderMode_; }
+    uint32_t getVisualizeMode() const { return visualizeMode_; }
 
     void setSHDegree(uint32_t degree);
 

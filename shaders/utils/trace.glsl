@@ -92,7 +92,7 @@ void processParticleHit(uint  particleId,
                         inout float transmittance,
                         inout float depth)
 {
-    if (sceneBounds.renderMode == RENDER_MODE_POINT)
+    if (sceneBounds.visualizeMode == VISUALIZE_MODE_POINT)
     {
         // Point visualization: simple opaque dots
         vec3 pPosition = positionBuffer.data[particleId];
@@ -110,7 +110,7 @@ void processParticleHit(uint  particleId,
             transmittance = 0.0;
         }
     }
-    else if (sceneBounds.renderMode == RENDER_MODE_SPLAT)
+    else if (sceneBounds.visualizeMode == VISUALIZE_MODE_SPLAT)
     {
         // Splat visualization: 2D circular falloff
         vec3  pPosition   = positionBuffer.data[particleId];
@@ -148,7 +148,7 @@ void processParticleHit(uint  particleId,
             }
         }
     }
-    else if (sceneBounds.renderMode == RENDER_MODE_GS)
+    else if (sceneBounds.visualizeMode == VISUALIZE_MODE_GS)
     {
         // 1. Load particle color + opacity (early cull check)
         vec4  pColor   = colorBuffer.data[particleId];

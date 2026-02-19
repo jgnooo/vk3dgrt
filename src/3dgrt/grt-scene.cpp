@@ -381,13 +381,13 @@ void GRTScene::setDoFParams(float aperture, float focalDistance)
 }
 
 
-void GRTScene::setRenderMode(uint32_t mode)
+void GRTScene::setVisualizeMode(uint32_t mode)
 {
-    if (renderMode_ != mode)
+    if (visualizeMode_ != mode)
     {
-        renderMode_ = mode;
+        visualizeMode_ = mode;
 
-        // Update scene bounds UBO with new render mode
+        // Update scene bounds UBO with new visualize mode
         if (initialized)
         {
             SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
@@ -663,7 +663,7 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
     ubo.maxBound     = maxBound;
     ubo.tMax         = glm::length(maxBound - minBound) * 2.0f;
     ubo.hasSH        = gaussianParticleBuffers.hasSHCoefficients() ? 1 : 0;
-    ubo.renderMode   = renderMode_;
+    ubo.visualizeMode = visualizeMode_;
     ubo.shDegree     = shDegree_;
     ubo.kernelDegree = kernelDegree_;
 

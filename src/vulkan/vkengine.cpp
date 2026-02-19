@@ -364,15 +364,15 @@ void VkEngine::draw()
             displaySize);
     }
 
-    // Handle render mode changes from GUI
-    if (imguiManager.isRenderModeChanged())
+    // Handle visualize mode changes from GUI
+    if (imguiManager.isVisualizeModeChanged())
     {
         auto* gs = sceneManager.getGRTScene();
         if (gs)
         {
-            gs->setRenderMode(imguiManager.getRenderMode());
+            gs->setVisualizeMode(imguiManager.getVisualizeMode());
         }
-        imguiManager.clearRenderModeChanged();
+        imguiManager.clearVisualizeModeChanged();
     }
 
     // Handle SH degree changes from GUI
