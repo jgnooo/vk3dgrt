@@ -116,3 +116,12 @@ vk3dgrt/
 - Official implementation: [nv-tlabs/3dgrut](https://github.com/nv-tlabs/3dgrut)
 - Vulkan-based official implementation: [nvpro-samples/vk_gaussian_splatting](https://github.com/nvpro-samples/vk_gaussian_splatting)
 - [Claude](https://claude.ai) (Anthropic) assisted with code refactoring and rendering optimization.
+
+## 📋 Todo
+
+- [ ] **Refraction**
+- [ ] **Shadow**
+- [ ] **Plane Geometry**
+- [ ] **Sphere Geometry**
+- [ ] **Keyboard Events**
+- [ ] **Test on Ubuntu**
