@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LOG_H
+#define LOG_H
 
 #include <iostream>
 #include <iomanip>
@@ -173,3 +174,5 @@ inline void banner()
 }
 
 }   // namespace Log
+
+#endif // LOG_H
