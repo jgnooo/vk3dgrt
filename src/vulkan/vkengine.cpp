@@ -400,18 +400,40 @@ void VkEngine::draw()
     }
 
     // Handle mesh insertion from GUI
-    if (imguiManager.shouldInsertTeapot())
     {
-        auto* gs = sceneManager.getGRTScene();
-        if (gs)
-        {
-            static std::mt19937 rng(std::random_device{}());
-            static std::uniform_real_distribution<float> dist(-2.0f, 2.0f);
+        static std::mt19937 rng(std::random_device{}());
+        static std::uniform_real_distribution<float> posDist(-2.0f, 2.0f);
+        static std::uniform_real_distribution<float> rotDist(-15.0f, 15.0f);
 
-            glm::vec3 randomPos(dist(rng), dist(rng), dist(rng));
-            gs->addMesh(vk3dgrt::MeshPreset::TEAPOT, randomPos);
+        auto* gs = sceneManager.getGRTScene();
+
+        if (imguiManager.shouldInsertPlane() && gs)
+        {
+            glm::vec3 randomPos(posDist(rng), posDist(rng), posDist(rng));
+            gs->addMesh(vk3dgrt::MeshPreset::PLANE, randomPos);
+
+            // Apply small random rotation offsets on top of the standing base (90° X)
+            uint32_t idx       = gs->getMeshCount() - 1;
+            auto     transform = gs->getMeshInstances()[idx].meshTransform;
+            transform.rotation += glm::vec3(rotDist(rng), rotDist(rng), rotDist(rng));
+            gs->updateMeshTransform(idx, transform);
+
+            imguiManager.clearInsertPlane();
         }
-        imguiManager.clearInsertTeapot();
+
+        if (imguiManager.shouldInsertSphere() && gs)
+        {
+            glm::vec3 randomPos(posDist(rng), posDist(rng), posDist(rng));
+            gs->addMesh(vk3dgrt::MeshPreset::SPHERE, randomPos);
+            imguiManager.clearInsertSphere();
+        }
+
+        if (imguiManager.shouldInsertTeapot() && gs)
+        {
+            glm::vec3 randomPos(posDist(rng), posDist(rng), posDist(rng));
+            gs->addMesh(vk3dgrt::MeshPreset::TEAPOT, randomPos);
+            imguiManager.clearInsertTeapot();
+        }
     }
 
     // Handle mesh removal from GUI

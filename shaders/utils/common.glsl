@@ -121,7 +121,7 @@ struct MeshMaterialGPU
     vec3  color;
     uint  materialType;
     float reflectivity;
-    float _pad0;
+    uint  indexOffset;    // triangle offset in combined index buffer
     float _pad1;
     float _pad2;
 };

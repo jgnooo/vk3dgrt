@@ -117,11 +117,18 @@ vk3dgrt/
 - Vulkan-based official implementation: [nvpro-samples/vk_gaussian_splatting](https://github.com/nvpro-samples/vk_gaussian_splatting)
 - [Claude](https://claude.ai) (Anthropic) assisted with code refactoring and rendering optimization.
 
+## 📥 Assets
+
+Place the following file in `data/` directory before running:
+
+```powershell
+# Download teapot.obj (used by nvpro-samples/vk_gaussian_splatting)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/alecjacobson/common-3d-test-models/master/data/teapot.obj" -OutFile "data/teapot.obj"
+```
+
 ## 📋 Todo
 
 - [ ] **Refraction**
 - [ ] **Shadow**
-- [ ] **Plane Geometry**
-- [ ] **Sphere Geometry**
 - [ ] **Keyboard Events**
 - [ ] **Test on Ubuntu**

@@ -44,7 +44,8 @@ struct MeshMaterialGPU
     glm::vec3 color;          // 12B
     uint32_t  materialType;   //  4B  (0=diffuse, 1=reflective)
     float     reflectivity;   //  4B
-    float     _pad[3];        // 12B
+    uint32_t  indexOffset;    //  4B  triangle offset in combined index buffer
+    float     _pad[2];        //  8B
 };
 
 
@@ -53,10 +54,8 @@ static_assert(sizeof(MeshMaterialGPU) == 32, "MeshMaterialGPU must be 32 bytes")
 
 enum class MeshPreset
 {
-    // TODO: Add more presets (e.g., cube, plane, sphere)
-    // PLANE,
-    // SPHERE,
-    // CUBE,
+    PLANE,
+    SPHERE,
     TEAPOT,
 };
 
@@ -87,7 +86,7 @@ MeshInstance createPresetMesh(MeshPreset preset,
                               const glm::vec3& scale    = glm::vec3(1.0f));
 
 
-MeshMaterialGPU toGPUMaterial(const MeshMaterial& mat);
+MeshMaterialGPU toGPUMaterial(const MeshMaterial& mat, uint32_t indexOffset = 0);
 
 }   // namespace vk3dgrt
 

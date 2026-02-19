@@ -34,7 +34,11 @@ void main()
 {
     uint meshIndex = gl_InstanceCustomIndexEXT;
 
-    uvec3 idx = meshIndices.data[gl_PrimitiveID];
+    MeshMaterialGPU material = meshMaterials.data[meshIndex];
+
+    // gl_PrimitiveID is local to this BLAS geometry;
+    // offset by the mesh's triangle start in the combined index buffer
+    uvec3 idx = meshIndices.data[gl_PrimitiveID + material.indexOffset];
 
     // Barycentric interpolation of per-vertex normals
     vec3 barycentrics = vec3(
@@ -60,8 +64,6 @@ void main()
     {
         normal = -normal; // Flip normal to face the ray
     }
-
-    MeshMaterialGPU material = meshMaterials.data[meshIndex];
 
     meshPayload.normal       = normal;
     meshPayload.hitDist      = gl_HitTEXT;

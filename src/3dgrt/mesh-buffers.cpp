@@ -84,9 +84,9 @@ bool MeshBuffers::initialize(VkContext* context,
     std::vector<MeshMaterialGPU> allMaterials;
     allMaterials.reserve(meshCount_);
 
-    for (const auto& mesh : meshes)
+    for (uint32_t i = 0; i < meshCount_; ++i)
     {
-        allMaterials.push_back(toGPUMaterial(mesh.material));
+        allMaterials.push_back(toGPUMaterial(meshes[i].material, indexOffsets_[i]));
     }
 
     VkDeviceSize vertexDataSize = totalVertices * sizeof(glm::vec3);

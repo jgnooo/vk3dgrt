@@ -52,6 +52,8 @@ class ImGuiManager
     bool shAvailable_     = false;
 
     // Mesh
+    bool insertPlane_           = false;
+    bool insertSphere_          = false;
     bool insertTeapot_          = false;
     int  removeMeshIndex_       = -1;
     int  meshMaterialChangeIdx_ = -1;
@@ -144,6 +146,10 @@ public:
     void setSHAvailable(bool available) { shAvailable_ = available; }
 
     // Mesh
+    bool shouldInsertPlane() const { return insertPlane_; }
+    void clearInsertPlane() { insertPlane_ = false; }
+    bool shouldInsertSphere() const { return insertSphere_; }
+    void clearInsertSphere() { insertSphere_ = false; }
     bool shouldInsertTeapot() const { return insertTeapot_; }
     void clearInsertTeapot() { insertTeapot_ = false; }
     int  getRemoveMeshIndex() const { return removeMeshIndex_; }

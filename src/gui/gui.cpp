@@ -447,7 +447,17 @@ void ImGuiManager::showRightPanel()
         {
             if (ImGui::TreeNode("Load Mesh"))
             {
-                if (ImGui::Button("+ teapot.obj", ImVec2(-1.0f, 0.0f)))
+                if (ImGui::Button("+ Plane", ImVec2(-1.0f, 0.0f)))
+                {
+                    insertPlane_ = true;
+                }
+
+                if (ImGui::Button("+ Sphere", ImVec2(-1.0f, 0.0f)))
+                {
+                    insertSphere_ = true;
+                }
+
+                if (ImGui::Button("+ Teapot", ImVec2(-1.0f, 0.0f)))
                 {
                     insertTeapot_ = true;
                 }
@@ -654,7 +664,14 @@ void ImGuiManager::showRightPanel()
 
                         if (ImGui::Button(meshes[i].name.c_str(), ImVec2(nameWidth, 0.0f)))
                         {
-                            setSelectedMeshIndex(static_cast<int>(i));
+                            if (isSelected)
+                            {
+                                setSelectedMeshIndex(-1);
+                            }
+                            else
+                            {
+                                setSelectedMeshIndex(static_cast<int>(i));
+                            }
                         }
                         ImGui::PopStyleColor();
 
