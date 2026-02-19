@@ -757,26 +757,36 @@ void ImGuiManager::showRightPanel()
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
+
         ImGui::Text("Depth of Field");
+        ImGui::SameLine();
+        if (ImGui::Checkbox("##DoFEnable", &dofEnabled_))
+        {
+            dofEnabledChanged_ = true;
+        }
+
         ImGui::Spacing();
 
         if (ImGui::TreeNode("DoF Parameters"))
         {
-            if (ImGui::Checkbox("Enable##DoF", &dofEnabled_))
+            if (!dofEnabled_)
             {
-                dofEnabledChanged_ = true;
+                ImGui::BeginDisabled();
             }
 
-            if (dofEnabled_)
+            if (ImGui::SliderFloat("Aperture", &dofAperture_, 0.f, 0.5f))
             {
-                if (ImGui::SliderFloat("Aperture", &dofAperture_, 0.f, 0.5f))
-                {
-                    dofParamsChanged_ = true;
-                }
-                if (ImGui::SliderFloat("Focal Distance", &dofFocalDistance_, 0.1f, 100.0f))
-                {
-                    dofParamsChanged_ = true;
-                }
+                dofParamsChanged_ = true;
+            }
+            if (ImGui::SliderFloat("Focal Distance", &dofFocalDistance_, 0.1f, 100.0f))
+            {
+                dofParamsChanged_ = true;
+            }
+
+            if (!dofEnabled_)
+            {
+                ImGui::EndDisabled();
+                ImGui::TextDisabled("Enable DoF to adjust");
             }
 
             ImGui::TreePop();
