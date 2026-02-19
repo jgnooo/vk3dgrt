@@ -2,7 +2,7 @@
 
 ![screenshot](assets/main.png)
 
-_Scene Downloaded from: [LINK](https://note.com/steam_studio/n/ne9736d94f162)_
+_Scene Downloaded from: [LINK](https://huggingface.co/datasets/Voxel51/gaussian_splatting)_
 
 ## 📒 TL;DR
 
