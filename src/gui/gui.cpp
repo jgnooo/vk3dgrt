@@ -3,6 +3,7 @@
 #include "vulkan/vkerror.h"
 #include "3dgrt/grt-scene.h"
 #include "3dgrt/mesh-data.h"
+#include "log.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -245,6 +246,7 @@ void ImGuiManager::showTransformPanel()
         if (ImGui::Button("T##mode", ImVec2(buttonWidth, 0.0f)))
         {
             meshGizmo_.setMode(GizmoMode::TRANSLATE);
+            Log::INFO("GUI") << "Gizmo mode changed: Translate";
         }
         if (ImGui::IsItemHovered())
         {
@@ -266,6 +268,7 @@ void ImGuiManager::showTransformPanel()
         if (ImGui::Button("R##mode", ImVec2(buttonWidth, 0.0f)))
         {
             meshGizmo_.setMode(GizmoMode::ROTATE);
+            Log::INFO("GUI") << "Gizmo mode changed: Rotate";
         }
         if (ImGui::IsItemHovered())
         {
@@ -287,6 +290,7 @@ void ImGuiManager::showTransformPanel()
         if (ImGui::Button("S##mode", ImVec2(buttonWidth, 0.0f)))
         {
             meshGizmo_.setMode(GizmoMode::SCALE);
+            Log::INFO("GUI") << "Gizmo mode changed: Scale";
         }
         if (ImGui::IsItemHovered())
         {
@@ -335,6 +339,27 @@ void ImGuiManager::showTransformPanel()
         if (posChanged || rotChanged || sclChanged)
         {
             meshTransformChanged_ = true;
+            if (posChanged)
+            {
+                Log::INFO("GUI") << "Transform position: ("
+                                 << editTransform_.position.x << ", "
+                                 << editTransform_.position.y << ", "
+                                 << editTransform_.position.z << ")";
+            }
+            if (rotChanged)
+            {
+                Log::INFO("GUI") << "Transform rotation: ("
+                                 << editTransform_.rotation.x << ", "
+                                 << editTransform_.rotation.y << ", "
+                                 << editTransform_.rotation.z << ")";
+            }
+            if (sclChanged)
+            {
+                Log::INFO("GUI") << "Transform scale: ("
+                                 << editTransform_.scale.x << ", "
+                                 << editTransform_.scale.y << ", "
+                                 << editTransform_.scale.z << ")";
+            }
         }
 
         // Keyboard shortcuts for gizmo mode (only when not typing in a text input)
@@ -343,14 +368,17 @@ void ImGuiManager::showTransformPanel()
             if (ImGui::IsKeyPressed(ImGuiKey_T))
             {
                 meshGizmo_.setMode(GizmoMode::TRANSLATE);
+                Log::INFO("GUI") << "Gizmo mode changed (key): Translate";
             }
             else if (ImGui::IsKeyPressed(ImGuiKey_R))
             {
                 meshGizmo_.setMode(GizmoMode::ROTATE);
+                Log::INFO("GUI") << "Gizmo mode changed (key): Rotate";
             }
             else if (ImGui::IsKeyPressed(ImGuiKey_S))
             {
                 meshGizmo_.setMode(GizmoMode::SCALE);
+                Log::INFO("GUI") << "Gizmo mode changed (key): Scale";
             }
         }
     }
@@ -359,6 +387,7 @@ void ImGuiManager::showTransformPanel()
     // Escape to deselect
     if (ImGui::IsKeyPressed(ImGuiKey_Escape) && !ImGui::GetIO().WantTextInput)
     {
+        Log::INFO("GUI") << "Deselect mesh (Escape)";
         selectedMeshIndex_ = -1;
     }
 }
@@ -450,16 +479,19 @@ void ImGuiManager::showRightPanel()
                 if (ImGui::Button("+ Plane", ImVec2(-1.0f, 0.0f)))
                 {
                     insertPlane_ = true;
+                    Log::INFO("GUI") << "Insert mesh: Plane";
                 }
 
                 if (ImGui::Button("+ Sphere", ImVec2(-1.0f, 0.0f)))
                 {
                     insertSphere_ = true;
+                    Log::INFO("GUI") << "Insert mesh: Sphere";
                 }
 
                 if (ImGui::Button("+ Teapot", ImVec2(-1.0f, 0.0f)))
                 {
                     insertTeapot_ = true;
+                    Log::INFO("GUI") << "Insert mesh: Teapot";
                 }
 
                 ImGui::TreePop();
@@ -507,6 +539,7 @@ void ImGuiManager::showRightPanel()
                     if (ImGui::RadioButton(labels[i], &camType, values[i]))
                     {
                         cameraTypeChanged_ = true;
+                        Log::INFO("GUI") << "Camera type changed: " << labels[i];
                     }
                 }
             }
@@ -553,6 +586,7 @@ void ImGuiManager::showRightPanel()
                     if (ImGui::RadioButton(labels[i], &mode, values[i]))
                     {
                         visualizeModeChanged_ = true;
+                        Log::INFO("GUI") << "Visualize mode changed: " << labels[i];
                     }
                 }
             }
@@ -573,6 +607,7 @@ void ImGuiManager::showRightPanel()
                 if (ImGui::Combo("##RenderMode", &currentRenderMode, renderModeItems, IM_ARRAYSIZE(renderModeItems)))
                 {
                     renderModeChanged_ = true;
+                    Log::INFO("GUI") << "Render mode changed: " << renderModeItems[currentRenderMode];
                 }
                 renderMode_ = static_cast<uint32_t>(currentRenderMode);
             }
@@ -616,6 +651,7 @@ void ImGuiManager::showRightPanel()
                     {
                         degree           = i;
                         shDegreeChanged_ = true;
+                        Log::INFO("GUI") << "SH degree changed: " << i;
                     }
 
                     if (isSelected)
@@ -684,10 +720,12 @@ void ImGuiManager::showRightPanel()
                         {
                             if (isSelected)
                             {
+                                Log::INFO("GUI") << "Deselect mesh: " << meshes[i].name;
                                 setSelectedMeshIndex(-1);
                             }
                             else
                             {
+                                Log::INFO("GUI") << "Select mesh: " << meshes[i].name << " (index=" << i << ")";
                                 setSelectedMeshIndex(static_cast<int>(i));
                             }
                         }
@@ -700,12 +738,15 @@ void ImGuiManager::showRightPanel()
                         {
                             meshMaterialChangeIdx_ = static_cast<int>(i);
                             meshMaterialNewType_   = matType;
+                            Log::INFO("GUI") << "Material changed: " << meshes[i].name
+                                             << " -> " << materialLabels[matType];
                         }
 
                         // Delete button
                         ImGui::SameLine(0.0f, buttonSpacing);
                         if (ImGui::Button("X", ImVec2(removeWidth, 0.0f)))
                         {
+                            Log::INFO("GUI") << "Remove mesh: " << meshes[i].name << " (index=" << i << ")";
                             removeMeshIndex_ = static_cast<int>(i);
 
                             // Handle selection state on deletion
@@ -743,41 +784,49 @@ void ImGuiManager::showRightPanel()
             if (ImGui::SliderAngle("FOV", &fisheyeFovDeg_, 10.0f, 360.0f))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye FOV changed: " << glm::degrees(fisheyeFovDeg_) << " deg";
             }
 
             if (ImGui::SliderAngle("Max Angle", &fisheyeMaxAngleDeg_, 5.0f, 180.0f))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye Max Angle changed: " << glm::degrees(fisheyeMaxAngleDeg_) << " deg";
             }
 
             if (ImGui::DragFloat("Center X", &fisheyeCx_, 0.5f, -500.0f, 500.0f, "%.1f px"))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye Center X changed: " << fisheyeCx_ << " px";
             }
 
             if (ImGui::DragFloat("Center Y", &fisheyeCy_, 0.5f, -500.0f, 500.0f, "%.1f px"))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye Center Y changed: " << fisheyeCy_ << " px";
             }
 
             if (ImGui::DragFloat("k1", &fisheyeK1_, 0.001f, -1.0f, 1.0f, "%.4f"))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye k1 changed: " << fisheyeK1_;
             }
 
             if (ImGui::DragFloat("k2", &fisheyeK2_, 0.001f, -1.0f, 1.0f, "%.4f"))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye k2 changed: " << fisheyeK2_;
             }
 
             if (ImGui::DragFloat("k3", &fisheyeK3_, 0.001f, -1.0f, 1.0f, "%.4f"))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye k3 changed: " << fisheyeK3_;
             }
 
             if (ImGui::DragFloat("k4", &fisheyeK4_, 0.001f, -1.0f, 1.0f, "%.4f"))
             {
                 fisheyeParamsChanged_ = true;
+                Log::INFO("GUI") << "Fisheye k4 changed: " << fisheyeK4_;
             }
 
             if (!isFisheye)
@@ -798,6 +847,7 @@ void ImGuiManager::showRightPanel()
         if (ImGui::Checkbox("##DoFEnable", &dofEnabled_))
         {
             dofEnabledChanged_ = true;
+            Log::INFO("GUI") << "DoF " << (dofEnabled_ ? "enabled" : "disabled");
         }
 
         ImGui::Spacing();
@@ -812,10 +862,12 @@ void ImGuiManager::showRightPanel()
             if (ImGui::SliderFloat("Aperture", &dofAperture_, 0.f, 0.5f))
             {
                 dofParamsChanged_ = true;
+                Log::INFO("GUI") << "DoF Aperture changed: " << dofAperture_;
             }
             if (ImGui::SliderFloat("Focal Distance", &dofFocalDistance_, 0.1f, 100.0f))
             {
                 dofParamsChanged_ = true;
+                Log::INFO("GUI") << "DoF Focal Distance changed: " << dofFocalDistance_;
             }
 
             if (!dofEnabled_)
