@@ -1,31 +1,23 @@
-# vk3dgrt
-
-A Vulkan-based 3D Gaussian Ray Tracing (3DGRT) viewer.
+# Vulkan-based 3D Gaussian Ray Tracing (3DGRT) Viewer
 
 ![screenshot](docs/screenshot.png) <!-- TODO: Add screenshot -->
 
-## Features
+## 📒 TL;DR
 
-- Vulkan 1.3 Ray Tracing Pipeline (VK_KHR_ray_tracing_pipeline)
-- 3D Gaussian Splatting rendering (Gaussian / Point / Splat modes)
-- View-dependent color via Spherical Harmonics (SH degree 3)
-- BLAS/TLAS acceleration structures
-- Real-time parameter tuning with ImGui
-- Interactive camera control
+A Vulkan-based implementation of the 3DGRT (3D Gaussian Ray Tracing) paper (SIGGRAPH Asia 2024), built as a personal project to learn the Vulkan API and GPU ray tracing pipeline.
+Unlike traditional rasterization-based 3D Gaussian Splatting, 3DGRT traces rays against a BVH of Gaussian particles, enabling secondary lighting effects and complex camera models. The current implementation supports reflection, depth of field, and fisheye camera rendering.
 
-## Requirements
+## ⚙️ Requirements
 
 | Item | Requirement |
-|------|------------|
-| OS | Windows 10/11 |
+|------|-------------|
 | GPU | Vulkan Ray Tracing capable GPU (e.g. NVIDIA RTX series) |
 | Vulkan SDK | [LunarG Vulkan SDK](https://vulkan.lunarg.com/) |
 | Compiler | MSVC (Visual Studio 2022) |
 | CMake | 3.16+ |
-| Build System | Ninja |
 | C++ Standard | C++23 |
 
-## Dependencies
+## 📦 Dependencies
 
 Managed via Git submodules.
 
@@ -36,8 +28,9 @@ Managed via Git submodules.
 | [GLM](https://github.com/g-truc/glm) | Math library |
 | [VMA](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) | Vulkan memory management |
 | [tinyply](https://github.com/ddiakopoulos/tinyply) | PLY file parsing |
+| [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) | OBJ file loader |
 
-## Build
+## 🔨 Build
 
 ```bash
 # 1. Clone
@@ -53,14 +46,14 @@ cmake -B build -S . -G Ninja
 cmake --build build --config Debug
 ```
 
-## Run
+## 🚀 Run
 
 ```bash
 # Specify a PLY file
 ./build/bin/vk3dgrt.exe path/to/scene.ply
 ```
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```
 vk3dgrt/
@@ -69,21 +62,28 @@ vk3dgrt/
 │   ├── vulkan/               # Vulkan engine (context, pipeline, buffer, image, etc.)
 │   ├── 3dgrt/                # 3DGRT implementation (scene, loader, renderer, accel struct)
 │   └── gui/                  # ImGui integration and camera control
-├── shaders/                  # GLSL RT shaders (rgen, rchit, rahit, rmiss)
+├── shaders/                  # GLSL shaders (rgen, rchit, rahit, rmiss, utils/)
 ├── data/                     # PLY scene data
 └── dependencies/             # External libraries (git submodules)
 ```
 
-## Tested Environment
+## 🖥️ Tested Environment
 
 | Item | Spec |
 |------|------|
 | OS | Windows 11 Home |
 | GPU | NVIDIA GeForce RTX 5070 |
 | Driver | 32.0.15.7688 |
+| Vulkan SDK | 1.3.296.0 |
+| MSVC | 19.38.33135 (VS 2022) |
+| CMake | 3.27.2 |
 
-## References
+## 📚 References
 
-- [3D Gaussian Splatting for Real-Time Radiance Field Rendering](https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/)
-- [nvpro-samples/vk_gaussian_splatting](https://github.com/nvpro-samples/vk_gaussian_splatting)
-- <!-- TODO: Add additional references -->
+- [3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes](https://arxiv.org/abs/2407.07090) (SIGGRAPH Asia 2024)
+
+## 🙏 Acknowledgments
+
+- Official implementation: [nv-tlabs/3dgrut](https://github.com/nv-tlabs/3dgrut)
+- Vulkan-based official implementation: [nvpro-samples/vk_gaussian_splatting](https://github.com/nvpro-samples/vk_gaussian_splatting)
+- [Claude](https://claude.ai) (Anthropic) assisted with code refactoring and rendering optimization.
