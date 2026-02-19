@@ -21,6 +21,9 @@ constexpr uint32_t GUI_VISUALIZE_MODE_GS    = 0;  // Gaussian Splatting
 constexpr uint32_t GUI_VISUALIZE_MODE_POINT = 1;  // Point visualization
 constexpr uint32_t GUI_VISUALIZE_MODE_SPLAT = 2;  // Splat visualization
 
+constexpr uint32_t GUI_RENDER_MODE_COLOR = 0;  // Color rendering (default)
+constexpr uint32_t GUI_RENDER_MODE_DEPTH = 1;  // Depth rendering
+
 constexpr uint32_t GUI_CAMERA_PINHOLE = 0;
 constexpr uint32_t GUI_CAMERA_FISHEYE = 1;
 
@@ -45,6 +48,10 @@ class ImGuiManager
     // Visualize mode
     uint32_t visualizeMode_        = GUI_VISUALIZE_MODE_GS;
     bool     visualizeModeChanged_ = false;
+
+    // Render mode
+    uint32_t renderMode_        = GUI_RENDER_MODE_COLOR;
+    bool     renderModeChanged_ = false;
 
     // SH degree
     int  shDegree_        = 0;
@@ -137,6 +144,12 @@ public:
     uint32_t getVisualizeMode() const { return visualizeMode_; }
     bool isVisualizeModeChanged() const { return visualizeModeChanged_; }
     void clearVisualizeModeChanged() { visualizeModeChanged_ = false; }
+
+    // Render mode
+    void setRenderMode(uint32_t mode) { renderMode_ = mode; }
+    uint32_t getRenderMode() const { return renderMode_; }
+    bool isRenderModeChanged() const { return renderModeChanged_; }
+    void clearRenderModeChanged() { renderModeChanged_ = false; }
 
     // SH degree
     void setSHDegree(int degree) { shDegree_ = degree; }

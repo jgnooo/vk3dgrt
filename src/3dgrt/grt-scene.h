@@ -69,6 +69,9 @@ class GRTScene : public Scene
     // Visualize mode
     uint32_t visualizeMode_ = VISUALIZE_MODE_GS;
 
+    // Render mode
+    uint32_t renderMode_ = RENDER_MODE_COLOR;
+
     // Kernel degree (1=standard, 2=generalized)
     uint32_t kernelDegree_ = DEFAULT_KERNEL_DEGREE;
 
@@ -154,6 +157,10 @@ public:
     void setVisualizeMode(uint32_t mode);
 
     uint32_t getVisualizeMode() const { return visualizeMode_; }
+
+    void setRenderMode(uint32_t mode);
+
+    uint32_t getRenderMode() const { return renderMode_; }
 
     void setSHDegree(uint32_t degree);
 

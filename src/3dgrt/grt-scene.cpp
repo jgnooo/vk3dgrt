@@ -397,6 +397,22 @@ void GRTScene::setVisualizeMode(uint32_t mode)
 }
 
 
+void GRTScene::setRenderMode(uint32_t mode)
+{
+    if (renderMode_ != mode)
+    {
+        renderMode_ = mode;
+
+        // Update scene bounds UBO with new render mode
+        if (initialized)
+        {
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+    }
+}
+
+
 void GRTScene::setSHDegree(uint32_t degree)
 {
     if (shDegree_ != degree)
@@ -680,7 +696,7 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
     ubo.enableReflection = anyReflective ? 1 : 0;
     ubo.maxBounces       = maxBounces_;
     ubo.meshCount        = static_cast<uint32_t>(meshInstances_.size());
-    ubo._pad0            = 0;
+    ubo.renderMode       = renderMode_;
 
     // Lighting parameters (always enabled with default values)
     ubo.enableLighting    = 1;

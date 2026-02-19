@@ -87,6 +87,13 @@ const float TRANSMITTANCE_THRESHOLD = 0.01;
 
 
 // --------------------------------------------------- //
+//  Render Mode Constants
+// --------------------------------------------------- //
+#define RENDER_MODE_COLOR  0   // Color rendering (default)
+#define RENDER_MODE_DEPTH  1   // Depth rendering
+
+
+// --------------------------------------------------- //
 //  Material Type Constants
 // --------------------------------------------------- //
 #define MATERIAL_DIFFUSE     0
@@ -144,7 +151,7 @@ struct SceneBounds
     uint enableReflection; // 1 to enable reflections, 0 to disable
     uint maxBounces;       // Maximum number of reflection bounces
     uint meshCount;        // Number of meshes in the scene
-    uint _pad0;            // Padding for 16-byte alignment
+    uint renderMode;       // 0: Color, 1: Depth
 
     // Lighting parameters (must match SceneBoundsUBO layout)
     uint  enableLighting;

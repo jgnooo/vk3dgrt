@@ -65,6 +65,9 @@ constexpr uint32_t VISUALIZE_MODE_GS       = 0;  // Gaussian Splatting (default)
 constexpr uint32_t VISUALIZE_MODE_POINT    = 1;  // Point visualization
 constexpr uint32_t VISUALIZE_MODE_SPLAT    = 2;  // Splat visualization
 
+constexpr uint32_t RENDER_MODE_COLOR = 0;  // Color rendering (default)
+constexpr uint32_t RENDER_MODE_DEPTH = 1;  // Depth rendering
+
 
 struct SceneBoundsUBO
 {
@@ -82,7 +85,7 @@ struct SceneBoundsUBO
     uint32_t  enableReflection = 0;   // 0: disabled, 1: enabled
     uint32_t  maxBounces       = 1;   // Maximum reflection bounces (1-3)
     uint32_t  meshCount        = 0;   // Number of inserted meshes
-    uint32_t  _pad0            = 0;
+    uint32_t  renderMode       = 0;   // 0: Color, 1: Depth
 
     // --- Lighting parameters (64 bytes) ---
     uint32_t  enableLighting    = 0;      // 0: disabled, 1: enabled

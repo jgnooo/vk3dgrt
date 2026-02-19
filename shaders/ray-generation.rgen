@@ -221,5 +221,19 @@ void main()
         }
     }
 
-    imageStore(outputImage, ivec2(pixelCoord), vec4(radiance, 1.0));
+    // Apply render mode
+    vec3 finalColor = radiance;
+    if (sceneBounds.renderMode == RENDER_MODE_DEPTH)
+    {
+        // Normalize depth: 0 = near, 1 = far
+        float d = clamp(depth / sceneBounds.tMax, 0.0, 1.0);
+
+        // Heatmap: near(0) = red/warm, far(1) = blue/cool
+        float t = 1.0 - d;  // invert so near=1, far=0
+        finalColor.r = clamp(1.5 - abs(t - 0.75) * 4.0, 0.0, 1.0);
+        finalColor.g = clamp(1.5 - abs(t - 0.50) * 4.0, 0.0, 1.0);
+        finalColor.b = clamp(1.5 - abs(t - 0.25) * 4.0, 0.0, 1.0);
+    }
+
+    imageStore(outputImage, ivec2(pixelCoord), vec4(finalColor, 1.0));
 }

@@ -559,6 +559,24 @@ void ImGuiManager::showRightPanel()
 
             visualizeMode_ = static_cast<uint32_t>(mode);
 
+            // Render Mode
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Text("Render Mode");
+            ImGui::Spacing();
+
+            {
+                const char* renderModeItems[] = {"Color", "Depth"};
+                int currentRenderMode = static_cast<int>(renderMode_);
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::Combo("##RenderMode", &currentRenderMode, renderModeItems, IM_ARRAYSIZE(renderModeItems)))
+                {
+                    renderModeChanged_ = true;
+                }
+                renderMode_ = static_cast<uint32_t>(currentRenderMode);
+            }
+
             // SH Degree - segmented button style
             ImGui::Spacing();
             ImGui::Separator();
