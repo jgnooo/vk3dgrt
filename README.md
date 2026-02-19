@@ -1,6 +1,8 @@
 # Vulkan-based 3D Gaussian Ray Tracing (3DGRT) Viewer
 
-![screenshot](docs/screenshot.png) <!-- TODO: Add screenshot -->
+![screenshot](assets/main.png)
+
+_Scene Downloaded from: [LINK](https://note.com/steam_studio/n/ne9736d94f162)_
 
 ## 📒 TL;DR
 
@@ -30,6 +32,17 @@ Managed via Git submodules.
 | [tinyply](https://github.com/ddiakopoulos/tinyply) | PLY file parsing |
 | [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) | OBJ file loader |
 
+## 🖥️ Tested Environment
+
+| Item | Spec |
+|------|------|
+| OS | Windows 11 Home |
+| GPU | NVIDIA GeForce RTX 5070 |
+| Driver | 32.0.15.7688 |
+| Vulkan SDK | 1.3.296.0 |
+| MSVC | 19.38.33135 (VS 2022) |
+| CMake | 3.27.2 |
+
 ## 🔨 Build
 
 ```bash
@@ -43,7 +56,7 @@ git submodule update --init --recursive
 # 2. Build (requires VS 2022 Developer Environment)
 # Run in PowerShell
 cmake -B build -S . -G Ninja
-cmake --build build --config Debug
+cmake --build build --config Release
 ```
 
 ## 🚀 Run
@@ -52,6 +65,33 @@ cmake --build build --config Debug
 # Specify a PLY file
 ./build/bin/vk3dgrt.exe path/to/scene.ply
 ```
+
+## 🎬 Features
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center">
+      <strong>Reflection</strong><br>
+      <img src="assets/reflection.png" width="400" alt="Reflection">
+    </td>
+    <td align="center">
+      <strong>Fisheye</strong><br>
+      <img src="assets/fisheye.png" width="400" alt="Fisheye">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>DoF</strong><br>
+      <img src="assets/dof.png" width="400" alt="DoF">
+    </td>
+    <td align="center">
+      <strong>Mesh Gizmo</strong><br>
+      <img src="assets/gizmo.png" width="400" alt="Gizmo">
+    </td>
+  </tr>
+</table>
+</div>
 
 ## 🗂️ Project Structure
 
@@ -66,17 +106,6 @@ vk3dgrt/
 ├── data/                     # PLY scene data
 └── dependencies/             # External libraries (git submodules)
 ```
-
-## 🖥️ Tested Environment
-
-| Item | Spec |
-|------|------|
-| OS | Windows 11 Home |
-| GPU | NVIDIA GeForce RTX 5070 |
-| Driver | 32.0.15.7688 |
-| Vulkan SDK | 1.3.296.0 |
-| MSVC | 19.38.33135 (VS 2022) |
-| CMake | 3.27.2 |
 
 ## 📚 References
 
