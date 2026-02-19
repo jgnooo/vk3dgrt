@@ -54,7 +54,6 @@ cd vk3dgrt
 git submodule update --init --recursive
 
 # 2. Build (requires VS 2022 Developer Environment)
-# Run in PowerShell
 cmake -B build -S . -G Ninja
 cmake --build build --config Release
 ```
