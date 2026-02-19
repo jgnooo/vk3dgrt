@@ -26,21 +26,10 @@ int main(int argc, char* argv[])
         plyPath = DEFAULT_PLY_PATH;
     }
 
+    // Start async scene loading (GUI renders immediately with progress bar)
     if (std::filesystem::exists(plyPath))
     {
-        if (engine.getSceneManager().loadGRTScene(plyPath))
-        {
-            auto* gs = engine.getSceneManager().getGRTScene();
-            if (gs)
-            {
-                Log::OK("Scene") << "Ready — "
-                    << Log::formatCount(gs->getParticleCount()) << " gaussians";
-            }
-        }
-        else
-        {
-            Log::ERR("Main") << "Failed to load scene, continuing without GRT rendering";
-        }
+        engine.getSceneManager().loadGRTScene(plyPath);
     }
     else
     {
