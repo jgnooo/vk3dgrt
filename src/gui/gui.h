@@ -2,6 +2,8 @@
 #define GUI_H
 
 #include "axis-gizmo.h"
+#include "mesh-gizmo.h"
+#include "3dgrt/mesh-data.h"
 
 #include <vulkan/vulkan.h>
 
@@ -33,7 +35,8 @@ class ImGuiManager
     bool showFpsOverlay_ = true;
     bool showRightPanel_ = true;
 
-    float rightPanelWidth_ = 300.0f;
+    float rightPanelWidth_  = 300.0f;
+    float fpsOverlayHeight_ = 0.0f;
 
     // Camera type
     uint32_t cameraType_        = GUI_CAMERA_PINHOLE;
@@ -54,6 +57,14 @@ class ImGuiManager
     int  meshMaterialChangeIdx_ = -1;
     int  meshMaterialNewType_   = 0;
 
+    // Mesh selection & transform
+    int                    selectedMeshIndex_    = -1;
+    vk3dgrt::MeshTransform editTransform_;
+    bool                   meshTransformChanged_ = false;
+
+    // Mesh gizmo
+    MeshGizmo meshGizmo_;
+
     // Fisheye parameters (SliderAngle stores radians internally, displays degrees)
     float fisheyeFovDeg_        = 3.14159265f;  // PI radians = 180°
     float fisheyeMaxAngleDeg_   = 1.57079632f;  // PI/2 radians = 90°
@@ -72,7 +83,7 @@ class ImGuiManager
     bool  dofEnabled_        = false;
     bool  dofEnabledChanged_ = false;
     float dofAperture_       = 0.05f;
-    float dofFocalDistance_  = 5.0f; 
+    float dofFocalDistance_  = 5.0f;
     bool  dofParamsChanged_  = false;
 
 public:
@@ -89,7 +100,13 @@ public:
     // UI panels
     void showFpsOverlay();
     void showRightPanel();
+    void showTransformPanel();
     void showAxisGizmo(const glm::mat4& viewMatrix);
+
+    // Mesh gizmo (3D viewport gizmo)
+    void updateMeshGizmo(const glm::mat4& viewMatrix,
+                         const glm::mat4& projMatrix,
+                         const glm::vec2& displaySize);
 
     // Scene access (for Assets panel)
     void setScene(vk3dgrt::GRTScene* scene) { scene_ = scene; }
@@ -131,6 +148,17 @@ public:
     int  getMeshMaterialChangeIndex() const { return meshMaterialChangeIdx_; }
     int  getMeshMaterialNewType() const { return meshMaterialNewType_; }
     void clearMeshMaterialChange() { meshMaterialChangeIdx_ = -1; }
+
+    // Mesh selection & transform
+    int  getSelectedMeshIndex() const { return selectedMeshIndex_; }
+    void setSelectedMeshIndex(int index);
+    const vk3dgrt::MeshTransform& getEditTransform() const { return editTransform_; }
+    bool isMeshTransformChanged() const { return meshTransformChanged_; }
+    void clearMeshTransformChanged() { meshTransformChanged_ = false; }
+
+    // Mesh gizmo state
+    bool isGizmoDragging() const { return meshGizmo_.isDragging(); }
+    bool isGizmoHovered() const { return meshGizmo_.isHovered(); }
 
     // Fisheye parameters
     float getFisheyeFovDeg() const { return fisheyeFovDeg_; }

@@ -47,6 +47,8 @@ class GRTScene : public Scene
     MeshBuffers               meshBuffers_;
     MeshBLAS                  meshBlas_;
     MeshTLAS                  meshTlas_;
+    bool                      meshTlasDirty_   = false;
+    uint32_t                  meshFrameIndex_  = 0;
 
     // Reflection state
     bool     reflectionEnabled_ = false;
@@ -161,6 +163,9 @@ public:
 
     // Per-mesh material type
     void setMeshMaterial(uint32_t index, MeshMaterialType type);
+
+    // Per-mesh transform (CPU-only update, GPU rebuild happens in recordCommands)
+    void updateMeshTransform(uint32_t index, const MeshTransform& transform);
 
     // Reflection settings
     void setReflectionEnabled(bool enabled);

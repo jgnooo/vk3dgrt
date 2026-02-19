@@ -75,6 +75,17 @@ void GRTScene::recordCommands(VkCommandBuffer cmdBuffer)
         return;
     }
 
+    // In-place TLAS update for mesh transform changes (no vkDeviceWaitIdle)
+    if (meshTlasDirty_ && meshBlas_.isBuilt())
+    {
+        auto meshTLASInstances = buildMeshTLASInstances();
+        meshTlas_.recordUpdate(cmdBuffer, meshFrameIndex_, meshTLASInstances);
+        meshTlasDirty_ = false;
+    }
+
+    // Advance frame index for double-buffered resources
+    meshFrameIndex_ = 1 - meshFrameIndex_;
+
     renderer.recordRayTrace(cmdBuffer);
 
     // DoF accumulation: blend current frame into accumulation buffer
@@ -499,6 +510,19 @@ std::vector<MeshTLASInstance> GRTScene::buildMeshTLASInstances() const
     }
 
     return result;
+}
+
+
+void GRTScene::updateMeshTransform(uint32_t index, const MeshTransform& transform)
+{
+    if (index >= meshInstances_.size())
+    {
+        return;
+    }
+
+    meshInstances_[index].meshTransform = transform;
+    meshInstances_[index].transform     = transform.toMatrix();
+    meshTlasDirty_ = true;
 }
 
 

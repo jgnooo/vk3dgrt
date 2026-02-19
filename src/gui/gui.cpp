@@ -117,6 +117,7 @@ void ImGuiManager::showFpsOverlay()
 {
     if (!showFpsOverlay_)
     {
+        fpsOverlayHeight_ = 0.0f;
         return;
     }
 
@@ -163,6 +164,8 @@ void ImGuiManager::showFpsOverlay()
                     static_cast<float>(vramUsed) / (1024.0f * 1024.0f),
                     static_cast<float>(vramTotal) / (1024.0f * 1024.0f));
     }
+
+    fpsOverlayHeight_ = ImGui::GetWindowHeight();
     ImGui::End();
 }
 
@@ -170,6 +173,246 @@ void ImGuiManager::showFpsOverlay()
 void ImGuiManager::showAxisGizmo(const glm::mat4& viewMatrix)
 {
     axisGizmo_.draw(viewMatrix);
+}
+
+
+void ImGuiManager::setSelectedMeshIndex(int index)
+{
+    selectedMeshIndex_ = index;
+
+    if (index >= 0 && scene_)
+    {
+        const auto& meshes = scene_->getMeshInstances();
+        if (index < static_cast<int>(meshes.size()))
+        {
+            editTransform_ = meshes[index].meshTransform;
+        }
+    }
+}
+
+
+void ImGuiManager::showTransformPanel()
+{
+    if (selectedMeshIndex_ < 0 || !scene_)
+    {
+        return;
+    }
+
+    const auto& meshes = scene_->getMeshInstances();
+    if (selectedMeshIndex_ >= static_cast<int>(meshes.size()))
+    {
+        selectedMeshIndex_ = -1;
+        return;
+    }
+
+    const float kPadding = 10.0f;
+    float panelY = kPadding + fpsOverlayHeight_ + kPadding;
+
+    ImGui::SetNextWindowPos(ImVec2(kPadding, panelY), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.35f);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 0.0f), ImVec2(250.0f, 600.0f));
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoMove;
+
+    if (ImGui::Begin("##Transform", nullptr, flags))
+    {
+        const auto& mesh = meshes[selectedMeshIndex_];
+
+        // Mesh name
+        ImGui::Text("%s", mesh.name.c_str());
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Gizmo mode selection buttons
+        float availWidth    = ImGui::GetContentRegionAvail().x;
+        float buttonSpacing = ImGui::GetStyle().ItemSpacing.x;
+        float buttonWidth   = (availWidth - buttonSpacing * 2.0f) / 3.0f;
+
+        GizmoMode mode = meshGizmo_.getMode();
+
+        // Translate button
+        bool isTrans = (mode == GizmoMode::TRANSLATE);
+        if (isTrans)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+        }
+        if (ImGui::Button("T##mode", ImVec2(buttonWidth, 0.0f)))
+        {
+            meshGizmo_.setMode(GizmoMode::TRANSLATE);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Translate (T)");
+        }
+        if (isTrans)
+        {
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::SameLine(0.0f, buttonSpacing);
+
+        // Rotate button
+        bool isRot = (mode == GizmoMode::ROTATE);
+        if (isRot)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+        }
+        if (ImGui::Button("R##mode", ImVec2(buttonWidth, 0.0f)))
+        {
+            meshGizmo_.setMode(GizmoMode::ROTATE);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Rotate (R)");
+        }
+        if (isRot)
+        {
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::SameLine(0.0f, buttonSpacing);
+
+        // Scale button
+        bool isScl = (mode == GizmoMode::SCALE);
+        if (isScl)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+        }
+        if (ImGui::Button("S##mode", ImVec2(buttonWidth, 0.0f)))
+        {
+            meshGizmo_.setMode(GizmoMode::SCALE);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Scale (S)");
+        }
+        if (isScl)
+        {
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Position
+        ImGui::Text("Position");
+        ImGui::PushItemWidth(-1.0f);
+        bool posChanged = false;
+        posChanged |= ImGui::DragFloat("X##pos", &editTransform_.position.x, 0.1f, 0.0f, 0.0f, "%.2f");
+        posChanged |= ImGui::DragFloat("Y##pos", &editTransform_.position.y, 0.1f, 0.0f, 0.0f, "%.2f");
+        posChanged |= ImGui::DragFloat("Z##pos", &editTransform_.position.z, 0.1f, 0.0f, 0.0f, "%.2f");
+        ImGui::PopItemWidth();
+
+        ImGui::Spacing();
+
+        // Rotation (degrees)
+        ImGui::Text("Rotation");
+        ImGui::PushItemWidth(-1.0f);
+        bool rotChanged = false;
+        rotChanged |= ImGui::DragFloat("X##rot", &editTransform_.rotation.x, 1.0f, -360.0f, 360.0f, "%.1f");
+        rotChanged |= ImGui::DragFloat("Y##rot", &editTransform_.rotation.y, 1.0f, -360.0f, 360.0f, "%.1f");
+        rotChanged |= ImGui::DragFloat("Z##rot", &editTransform_.rotation.z, 1.0f, -360.0f, 360.0f, "%.1f");
+        ImGui::PopItemWidth();
+
+        ImGui::Spacing();
+
+        // Scale
+        ImGui::Text("Scale");
+        ImGui::PushItemWidth(-1.0f);
+        bool sclChanged = false;
+        sclChanged |= ImGui::DragFloat("X##scl", &editTransform_.scale.x, 0.01f, 0.01f, 100.0f, "%.3f");
+        sclChanged |= ImGui::DragFloat("Y##scl", &editTransform_.scale.y, 0.01f, 0.01f, 100.0f, "%.3f");
+        sclChanged |= ImGui::DragFloat("Z##scl", &editTransform_.scale.z, 0.01f, 0.01f, 100.0f, "%.3f");
+        ImGui::PopItemWidth();
+
+        if (posChanged || rotChanged || sclChanged)
+        {
+            meshTransformChanged_ = true;
+        }
+
+        // Keyboard shortcuts for gizmo mode (only when not typing in a text input)
+        if (!ImGui::GetIO().WantTextInput)
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_T))
+            {
+                meshGizmo_.setMode(GizmoMode::TRANSLATE);
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey_R))
+            {
+                meshGizmo_.setMode(GizmoMode::ROTATE);
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey_S))
+            {
+                meshGizmo_.setMode(GizmoMode::SCALE);
+            }
+        }
+    }
+    ImGui::End();
+
+    // Escape to deselect
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape) && !ImGui::GetIO().WantTextInput)
+    {
+        selectedMeshIndex_ = -1;
+    }
+}
+
+
+void ImGuiManager::updateMeshGizmo(const glm::mat4& viewMatrix,
+                                    const glm::mat4& projMatrix,
+                                    const glm::vec2& displaySize)
+{
+    if (selectedMeshIndex_ < 0 || !scene_)
+    {
+        return;
+    }
+
+    const auto& meshes = scene_->getMeshInstances();
+    if (selectedMeshIndex_ >= static_cast<int>(meshes.size()))
+    {
+        return;
+    }
+
+    glm::vec3 cameraPos = glm::vec3(glm::inverse(viewMatrix)[3]);
+
+    // Compute gizmo center from editTransform_ + localCenter to stay in sync during drag
+    // (using editTransform_ avoids 1-frame lag vs mesh instance's stored transform)
+    const auto& selectedMesh = meshes[selectedMeshIndex_];
+    glm::vec3 gizmoCenter = glm::vec3(
+        editTransform_.toMatrix() * glm::vec4(selectedMesh.localCenter, 1.0f));
+
+    // Handle input first (before drawing, so hover state is current)
+    glm::vec3 pos = editTransform_.position;
+    glm::vec3 rot = editTransform_.rotation;
+    glm::vec3 scl = editTransform_.scale;
+
+    bool modified = meshGizmo_.handleInput(viewMatrix, projMatrix,
+                                            cameraPos, gizmoCenter,
+                                            displaySize,
+                                            pos, rot, scl);
+
+    if (modified)
+    {
+        editTransform_.position = pos;
+        editTransform_.rotation = rot;
+        editTransform_.scale    = scl;
+        meshTransformChanged_   = true;
+    }
+
+    // Block camera input when gizmo is active
+    if (meshGizmo_.isDragging() || meshGizmo_.isHovered())
+    {
+        ImGui::GetIO().WantCaptureMouse = true;
+    }
+
+    // Draw the gizmo overlay at the mesh's visual center
+    meshGizmo_.draw(viewMatrix, projMatrix, gizmoCenter, displaySize);
 }
 
 
@@ -208,7 +451,7 @@ void ImGuiManager::showRightPanel()
                 {
                     insertTeapot_ = true;
                 }
-                
+
                 ImGui::TreePop();
             }
         }
@@ -396,10 +639,23 @@ void ImGuiManager::showRightPanel()
 
                         int matType = static_cast<int>(meshes[i].material.type);
 
-                        // Mesh name label (non-interactive)
-                        ImGui::PushStyleColor(ImGuiCol_Button,
-                                              ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
-                        ImGui::Button(meshes[i].name.c_str(), ImVec2(nameWidth, 0.0f));
+                        // Mesh name button (clickable for selection)
+                        bool isSelected = (selectedMeshIndex_ == static_cast<int>(i));
+                        if (isSelected)
+                        {
+                            ImGui::PushStyleColor(ImGuiCol_Button,
+                                                  ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+                        }
+                        else
+                        {
+                            ImGui::PushStyleColor(ImGuiCol_Button,
+                                                  ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
+                        }
+
+                        if (ImGui::Button(meshes[i].name.c_str(), ImVec2(nameWidth, 0.0f)))
+                        {
+                            setSelectedMeshIndex(static_cast<int>(i));
+                        }
                         ImGui::PopStyleColor();
 
                         // Material type combo
@@ -416,6 +672,16 @@ void ImGuiManager::showRightPanel()
                         if (ImGui::Button("X", ImVec2(removeWidth, 0.0f)))
                         {
                             removeMeshIndex_ = static_cast<int>(i);
+
+                            // Handle selection state on deletion
+                            if (selectedMeshIndex_ == static_cast<int>(i))
+                            {
+                                selectedMeshIndex_ = -1;
+                            }
+                            else if (selectedMeshIndex_ > static_cast<int>(i))
+                            {
+                                selectedMeshIndex_--;
+                            }
                         }
 
                         ImGui::PopID();

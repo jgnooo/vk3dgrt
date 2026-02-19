@@ -21,7 +21,7 @@ struct MeshTLASInstance
 {
     VkDeviceAddress blasAddress;
     glm::mat4       transform;
-    uint32_t        meshIndex; 
+    uint32_t        meshIndex;
 };
 
 
@@ -31,7 +31,13 @@ class MeshTLAS
 
     AccelerationStructure        tlas;
     AccelerationStructureBuilder builder;
-    AllocatedBuffer              instanceBuffer;
+
+    // Double-buffered persistent resources for frame-in-flight safe updates.
+    // Avoids per-frame allocation and vkDeviceWaitIdle stalls.
+    static constexpr uint32_t kMaxFramesInFlight = 2;
+    AllocatedBuffer instanceBuffers_[kMaxFramesInFlight];
+    AllocatedBuffer updateScratches_[kMaxFramesInFlight];
+    uint32_t        instanceCount_ = 0;
 
 public:
     MeshTLAS()  = default;
@@ -50,6 +56,12 @@ public:
     bool buildAndSubmit(VkProvider* provider,
                         const std::vector<MeshTLASInstance>& meshInstances);
 
+    // Record in-place TLAS update into command buffer (no vkDeviceWaitIdle).
+    // Uses double-buffered persistent resources for frame-in-flight safety.
+    void recordUpdate(VkCommandBuffer cmdBuffer,
+                      uint32_t frameIndex,
+                      const std::vector<MeshTLASInstance>& meshInstances);
+
     void cleanup(VkContext* context);
 
     bool isBuilt() const { return built; }
@@ -58,6 +70,9 @@ public:
 
 private:
     std::vector<AccelerationStructureInstance> generateInstances(const std::vector<MeshTLASInstance>& meshInstances) const;
+
+    void uploadInstances(AllocatedBuffer& buffer,
+                         const std::vector<MeshTLASInstance>& meshInstances) const;
 };
 
 }   // namespace vk3dgrt

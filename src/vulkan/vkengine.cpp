@@ -7,6 +7,7 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
+#include <imgui.h>
 #include <GLFW/glfw3.h>
 
 #include <random>
@@ -22,8 +23,7 @@ void VkEngine::initialize()
     createGLFWWindow();
 
     context.initialize(window);
-    // TODO: Check hardcoded size.
-    swapchain.create(&context, 1280, 720);
+    swapchain.create(&context, 1600, 1000);
 
     createCommandPools();
     createFrameResources();
@@ -171,7 +171,7 @@ void VkEngine::createGLFWWindow()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window = glfwCreateWindow(1280, 720, "VK3DGRT", nullptr, nullptr);
+    window = glfwCreateWindow(1600, 1000, "VK3DGRT", nullptr, nullptr);
 
     if (!window)
         throw std::runtime_error("[VkEngine] Failed to create GLFW window.");
@@ -333,11 +333,23 @@ void VkEngine::draw()
     // Build ImGui UI
     imguiManager.showFpsOverlay();
     imguiManager.showRightPanel();
+    imguiManager.showTransformPanel();
 
     // Axis gizmo
     if (gs)
     {
         imguiManager.showAxisGizmo(gs->getCamera().getViewMatrix());
+    }
+
+    // Mesh gizmo (3D translate/rotate/scale)
+    if (gs)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        glm::vec2 displaySize(io.DisplaySize.x, io.DisplaySize.y);
+        imguiManager.updateMeshGizmo(
+            gs->getCamera().getViewMatrix(),
+            gs->getCamera().getProjectionMatrix(),
+            displaySize);
     }
 
     // Handle render mode changes from GUI
@@ -382,7 +394,7 @@ void VkEngine::draw()
         if (gs)
         {
             static std::mt19937 rng(std::random_device{}());
-            static std::uniform_real_distribution<float> dist(-7.0f, 7.0f);
+            static std::uniform_real_distribution<float> dist(-2.0f, 2.0f);
 
             glm::vec3 randomPos(dist(rng), dist(rng), dist(rng));
             gs->addMesh(vk3dgrt::MeshPreset::TEAPOT, randomPos);
@@ -399,6 +411,19 @@ void VkEngine::draw()
             gs->removeMesh(static_cast<uint32_t>(imguiManager.getRemoveMeshIndex()));
         }
         imguiManager.clearRemoveMeshIndex();
+    }
+
+    // Handle mesh transform changes from GUI (panel or gizmo)
+    if (imguiManager.isMeshTransformChanged())
+    {
+        auto* gs = sceneManager.getGRTScene();
+        if (gs && imguiManager.getSelectedMeshIndex() >= 0)
+        {
+            gs->updateMeshTransform(
+                static_cast<uint32_t>(imguiManager.getSelectedMeshIndex()),
+                imguiManager.getEditTransform());
+        }
+        imguiManager.clearMeshTransformChanged();
     }
 
     if (imguiManager.isCameraTypeChanged())
