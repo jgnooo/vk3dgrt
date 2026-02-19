@@ -165,7 +165,7 @@ void GRTScene::onResize(uint32_t width, uint32_t height)
 }
 
 
-bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* window)
+bool GRTScene::loadSceneCPU(const std::filesystem::path& plyPath, std::atomic<float>* progress)
 {
     if (!provider_)
     {
@@ -173,31 +173,45 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
         return false;
     }
 
-    VkContext* context = &provider_->getContext();
-
-    // 1. Load Gaussian data from PLY
+    // 1. Load Gaussian data from PLY (CPU-only, thread-safe)
     Loader loader;
-    if (!loader.loadPLY(plyPath, gaussianParticleData))
+    if (!loader.loadPLY(plyPath, gaussianParticleData, progress))
     {
         Log::ERR("Scene") << "Failed to load PLY: " << loader.getLastError();
-        // Continue without data - renderer can still be initialized
-    }
-    else
-    {
-        dataLoaded = true;
-
-        // Compute scene bounds
-        computeSceneBounds();
-
-        Log::INFO("Scene") << "Bounds: ("
-            << std::fixed << std::setprecision(2)
-            << minBound.x << ", " << minBound.y << ", " << minBound.z << ") to ("
-            << maxBound.x << ", " << maxBound.y << ", " << maxBound.z << ")";
+        return false;
     }
 
-    // 2. Initialize GPU buffers
-    if (dataLoaded)
+    dataLoaded = true;
+
+    // 2. Compute scene bounds (CPU-only)
+    computeSceneBounds();
+
+    Log::INFO("Scene") << "Bounds: ("
+        << std::fixed << std::setprecision(2)
+        << minBound.x << ", " << minBound.y << ", " << minBound.z << ") to ("
+        << maxBound.x << ", " << maxBound.y << ", " << maxBound.z << ")";
+
+    return true;
+}
+
+
+bool GRTScene::loadSceneGPUStep(int step, GLFWwindow* window)
+{
+    if (!provider_)
     {
+        Log::ERR("Scene") << "Provider not set.";
+        return false;
+    }
+
+    VkContext* context = &provider_->getContext();
+
+    switch (step)
+    {
+    case 0:  // Upload GPU buffers
+    {
+        if (!dataLoaded)
+            break;
+
         VkQueue transferQueue         = context->queues[QueueType::TRANSFER];
         VkCommandPool transferCmdPool = provider_->getCommandPool(QueueType::TRANSFER);
 
@@ -208,79 +222,84 @@ bool GRTScene::loadScene(const std::filesystem::path& plyPath, GLFWwindow* windo
         }
 
         shDegree_ = gaussianParticleBuffers.getSHDegree();
+        break;
     }
-
-    // 3. Build Icosahedron BLAS
-    if (dataLoaded)
+    case 1:  // Build BLAS
     {
+        if (!dataLoaded)
+            break;
+
         if (!blas.buildAndSubmit(provider_, gaussianParticleBuffers))
         {
             Log::ERR("Scene") << "Failed to build BLAS";
             return false;
         }
+        break;
     }
-
-    // 4. Build TLAS
-    if (dataLoaded)
+    case 2:  // Build TLAS
     {
+        if (!dataLoaded)
+            break;
+
         if (!tlas.buildAndSubmit(provider_, gaussianParticleData, blas.getDeviceAddress()))
         {
             Log::ERR("Scene") << "Failed to build TLAS";
             return false;
         }
+        break;
     }
-
-    // 5. Initialize renderer
-    VkSwapchain& swapchain = provider_->getSwapchain();
-
-    // Build shader path from compile-time definition
-    std::string shaderPath = std::string(SHADER_DIR) + "/";
-
-    if (!renderer.initialize(context, swapchain.extent.width, swapchain.extent.height, shaderPath))
+    case 3:  // Initialize renderer + update descriptors
     {
-        Log::ERR("Scene") << "Failed to initialize renderer";
-        return false;
-    }
+        VkSwapchain& swapchain = provider_->getSwapchain();
+        std::string shaderPath = std::string(SHADER_DIR) + "/";
 
-    // 6. Update descriptors with scene data
-    if (dataLoaded)
-    {
-        if (!renderer.updateDescriptors(tlas, gaussianParticleBuffers))
+        if (!renderer.initialize(context, swapchain.extent.width, swapchain.extent.height, shaderPath))
         {
-            Log::ERR("Scene") << "Failed to update descriptors";
+            Log::ERR("Scene") << "Failed to initialize renderer";
             return false;
         }
 
-        // Update scene bounds UBO
-        SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
-        renderer.updateSceneBounds(boundsUBO);
+        if (dataLoaded)
+        {
+            if (!renderer.updateDescriptors(tlas, gaussianParticleBuffers))
+            {
+                Log::ERR("Scene") << "Failed to update descriptors";
+                return false;
+            }
+
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+        break;
     }
-
-    // 7. Initialize camera system
-    camera.setAspect(swapchain.extent.width, swapchain.extent.height);
-
-    if (dataLoaded)
+    case 4:  // Initialize camera
     {
-        // Fixed default camera like nvpro reference:
-        // eye=(0, 0, 2), center=(0, 0, 0), up=(0, 1, 0)
-        camera.position = glm::vec3(0.0f, 0.0f, 2.0f);
-        camera.target   = glm::vec3(0.0f, 0.0f, 0.0f);
-        camera.up       = glm::vec3(0.0f, 1.0f, 0.0f);
+        VkSwapchain& swapchain = provider_->getSwapchain();
+        camera.setAspect(swapchain.extent.width, swapchain.extent.height);
 
-        // Initialize controller (syncs orbit params from camera state)
-        cameraController.initialize(window, &camera);
+        if (dataLoaded)
+        {
+            camera.position = glm::vec3(0.0f, 0.0f, 2.0f);
+            camera.target   = glm::vec3(0.0f, 0.0f, 0.0f);
+            camera.up       = glm::vec3(0.0f, 1.0f, 0.0f);
+
+            cameraController.initialize(window, &camera);
+        }
+        else
+        {
+            cameraController.initialize(window, &camera);
+            cameraController.resetToDefault();
+        }
+
+        CameraUBO cameraUBO = buildCameraUBO();
+        renderer.updateCamera(cameraUBO);
+
+        initialized = true;
+        break;
     }
-    else
-    {
-        cameraController.initialize(window, &camera);
-        cameraController.resetToDefault();
+    default:
+        return false;
     }
-
-    // Update initial camera UBO
-    CameraUBO cameraUBO = buildCameraUBO();
-    renderer.updateCamera(cameraUBO);
-
-    initialized = true;
 
     return true;
 }

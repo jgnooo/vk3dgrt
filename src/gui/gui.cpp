@@ -794,3 +794,65 @@ void ImGuiManager::showRightPanel()
     }
     ImGui::End();
 }
+
+
+void ImGuiManager::showLoadingOverlay(float progress, const char* stageName, const char* fileName)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Semi-transparent fullscreen dim
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(io.DisplaySize);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.1f, 0.75f));
+    ImGui::Begin("##LoadingDim", nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav);
+    ImGui::End();
+    ImGui::PopStyleColor();
+
+    // Centered loading panel
+    ImVec2 panelSize(440, 148);
+    ImVec2 panelPos(
+        (io.DisplaySize.x - panelSize.x) * 0.5f,
+        (io.DisplaySize.y - panelSize.y) * 0.5f
+    );
+
+    ImGui::SetNextWindowPos(panelPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(panelSize);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(28, 22));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.18f, 0.95f));
+
+    ImGui::Begin("##LoadingPanel", nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoNav);
+
+    // Title
+    ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.95f, 1.0f), "Loading Scene");
+
+    // File name
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.6f, 1.0f), "%s", fileName);
+
+    ImGui::Spacing();
+
+    // Stage name
+    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.8f, 1.0f), "%s", stageName);
+
+    ImGui::Spacing();
+
+    // Progress bar with percentage
+    char overlay[32];
+    snprintf(overlay, sizeof(overlay), "%.0f%%", progress * 100.0f);
+
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.35f, 0.55f, 0.95f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.2f, 0.2f, 0.28f, 1.0f));
+    ImGui::ProgressBar(progress, ImVec2(-1, 22), overlay);
+    ImGui::PopStyleColor(2);
+
+    ImGui::End();
+
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(2);
+}

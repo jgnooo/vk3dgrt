@@ -321,6 +321,18 @@ void VkEngine::draw()
     // Start ImGui frame
     imguiManager.newFrame();
 
+    // Advance async loading (one GPU step per frame when CPU work is done)
+    sceneManager.updateLoading();
+
+    // Show loading overlay if scene is being loaded
+    if (sceneManager.isLoading())
+    {
+        imguiManager.showLoadingOverlay(
+            sceneManager.getLoadingProgress(),
+            sceneManager.getLoadingStageName(),
+            sceneManager.getLoadingFileName().c_str());
+    }
+
     // Update GUI state from scene
     auto* gs = sceneManager.getGRTScene();
     imguiManager.setScene(gs);

@@ -103,6 +103,9 @@ public:
     void showTransformPanel();
     void showAxisGizmo(const glm::mat4& viewMatrix);
 
+    // Loading overlay
+    void showLoadingOverlay(float progress, const char* stageName, const char* fileName);
+
     // Mesh gizmo (3D viewport gizmo)
     void updateMeshGizmo(const glm::mat4& viewMatrix,
                          const glm::mat4& projMatrix,

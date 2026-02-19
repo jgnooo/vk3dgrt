@@ -3,6 +3,7 @@
 
 #include "data.h"
 
+#include <atomic>
 #include <filesystem>
 #include <string>
 
@@ -30,7 +31,9 @@ public:
      * - f_dc_0, f_dc_1, f_dc_2: SH DC coefficients (optional)
      * - f_rest_*: SH higher order coefficients (optional)
      */
-    bool loadPLY(const std::filesystem::path& filePath, GaussianParticleData& outData);
+    bool loadPLY(const std::filesystem::path& filePath,
+                 GaussianParticleData& outData,
+                 std::atomic<float>* progress = nullptr);
 
     const std::string& getLastError() const
     {

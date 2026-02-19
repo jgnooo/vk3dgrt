@@ -17,6 +17,7 @@
 
 #include <glm/glm.hpp>
 
+#include <atomic>
 #include <filesystem>
 #include <string>
 
@@ -118,7 +119,14 @@ public:
 
     void onResize(uint32_t width, uint32_t height) override;
 
-    bool loadScene(const std::filesystem::path& plyPath, GLFWwindow* window);
+    // Split loading: CPU-only phase (safe to call from background thread)
+    bool loadSceneCPU(const std::filesystem::path& plyPath, std::atomic<float>* progress);
+
+    // Split loading: GPU phase, one step per call (must be called from main thread)
+    // Returns true when the step succeeds. step range: [0, GPU_LOAD_STEP_COUNT)
+    bool loadSceneGPUStep(int step, GLFWwindow* window);
+
+    static constexpr int GPU_LOAD_STEP_COUNT = 5;
 
     bool initializeEmpty(GLFWwindow* window);
 

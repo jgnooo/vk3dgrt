@@ -3,8 +3,11 @@
 
 #include "scene.h"
 
+#include <atomic>
 #include <filesystem>
 #include <memory>
+#include <string>
+#include <thread>
 
 
 // Forward declarations
@@ -15,6 +18,20 @@ struct GLFWwindow;
 namespace vk3dgrt { class GRTScene; }
 
 
+enum class LoadingStage : int
+{
+    IDLE              = 0,
+    LOADING_PLY       = 1,
+    UPLOADING_BUFFERS = 2,
+    BUILDING_BLAS     = 3,
+    BUILDING_TLAS     = 4,
+    INIT_RENDERER     = 5,
+    SETTING_UP_CAMERA = 6,
+    COMPLETE          = 7,
+    FAILED            = -1
+};
+
+
 class SceneManager
 {
     VkProvider* provider_ = nullptr;
@@ -22,9 +39,19 @@ class SceneManager
 
     std::unique_ptr<Scene> currentScene_;
 
+    // Async loading state
+    std::unique_ptr<std::thread>        loadingThread_;
+    std::unique_ptr<vk3dgrt::GRTScene>  pendingScene_;
+    std::atomic<LoadingStage>           loadingStage_{LoadingStage::IDLE};
+    std::atomic<float>                  loadingProgress_{0.0f};
+    std::atomic<bool>                   cpuLoadDone_{false};
+    std::atomic<bool>                   cpuLoadFailed_{false};
+    int                                 gpuLoadStep_ = 0;
+    std::string                         loadingFileName_;
+
 public:
     SceneManager()  = default;
-    ~SceneManager() = default;
+    ~SceneManager();
 
     // Disable copy
     SceneManager(const SceneManager&)            = delete;
@@ -34,7 +61,18 @@ public:
 
     void cleanup();
 
-    bool loadGRTScene(const std::filesystem::path& plyPath);
+    void loadGRTScene(const std::filesystem::path& plyPath);
+
+    bool isLoading() const;
+
+    float getLoadingProgress() const;
+
+    const char* getLoadingStageName() const;
+
+    const std::string& getLoadingFileName() const { return loadingFileName_; }
+
+    // Called each frame to advance GPU loading steps when CPU work is done
+    void updateLoading();
 
     void unloadScene();
 

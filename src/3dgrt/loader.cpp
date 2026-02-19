@@ -43,7 +43,9 @@ glm::vec4 Loader::normalizeQuaternion(float x, float y, float z, float w)
 //  Loader Implementation
 // --------------------------------------------------- //
 
-bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData& outData)
+bool Loader::loadPLY(const std::filesystem::path& filePath,
+                     GaussianParticleData& outData,
+                     std::atomic<float>* progress)
 {
     outData.clear();
     lastError.clear();
@@ -154,7 +156,13 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
             hasFullSH = false;
         }
 
+        if (progress)
+            progress->store(0.10f, std::memory_order_relaxed);
+
         plyFile.read(fileStream);
+
+        if (progress)
+            progress->store(0.40f, std::memory_order_relaxed);
 
         const size_t particleCount = positions->count;
         Log::INFO("Loader") << "  Particles : " << Log::Color::Bold << Log::formatCount(particleCount) << Log::Color::Reset;
@@ -231,6 +239,9 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
             particle.padding = 0.0f;
         }
 
+        if (progress)
+            progress->store(0.60f, std::memory_order_relaxed);
+
         if (shDCData)
         {
             outData.shCoeffsDC.resize(particleCount);
@@ -303,6 +314,9 @@ bool Loader::loadPLY(const std::filesystem::path& filePath, GaussianParticleData
                 }
             }
         }
+
+        if (progress)
+            progress->store(1.0f, std::memory_order_relaxed);
 
         Log::INFO("Loader") << "  Data size : " << Log::Color::Bold << Log::formatMemory(outData.getDataSizeBytes()) << Log::Color::Reset;
         Log::OK("Loader") << "Loaded successfully";
