@@ -85,6 +85,12 @@ cmake --build build --config Release
       <img src="assets/dof.png" width="400" alt="DoF">
     </td>
     <td align="center">
+      <strong>Simple Shadow</strong><br>
+      <img src="assets/shadow.png" width="400" alt="Gizmo">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <strong>Mesh Gizmo</strong><br>
       <img src="assets/gizmo.png" width="400" alt="Gizmo">
     </td>
