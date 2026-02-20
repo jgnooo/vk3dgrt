@@ -241,11 +241,11 @@ void main()
                 surfacePoint,
                 T_EPSILON,
                 normalize(-sceneBounds.lightDir),
-                100.0,
+                sceneBounds.tMax,
                 1
             );
 
-            // Mesh blocks light → darken proportional to Gaussian density
+            // Mesh blocks light -> darken proportional to Gaussian density
             if (meshPayload.hitDist < INFINITE_DISTANCE)
             {
                 float shadowFactor = mix(1.0, sceneBounds.shadowIntensity, totalOpacity);

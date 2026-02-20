@@ -10,6 +10,9 @@
 
 namespace vk3dgrt {
 
+CameraController* CameraController::sInstance_ = nullptr;
+
+
 // --------------------------------------------------- //
 //  Camera Implementation
 // --------------------------------------------------- //
@@ -125,8 +128,9 @@ void CameraController::initialize(GLFWwindow* window, Camera* camera)
     window_ = window;
     camera_ = camera;
 
-    // Store this pointer for callbacks
-    glfwSetWindowUserPointer(window_, this);
+    // Store instance for static GLFW callbacks
+    // (DO NOT use glfwSetWindowUserPointer — VkEngine owns it)
+    sInstance_ = this;
 
     // Set up callbacks
     glfwSetMouseButtonCallback(window_, mouseButtonCallback);
@@ -156,8 +160,9 @@ void CameraController::shutdown()
         glfwSetKeyCallback(window_, nullptr);
     }
 
-    window_ = nullptr;
-    camera_ = nullptr;
+    sInstance_ = nullptr;
+    window_    = nullptr;
+    camera_    = nullptr;
 }
 
 
@@ -241,7 +246,7 @@ void CameraController::mouseButtonCallback(GLFWwindow* window, int button, int a
         return;
     }
 
-    auto* controller = static_cast<CameraController*>(glfwGetWindowUserPointer(window));
+    auto* controller = sInstance_;
     if (!controller)
     {
         return;
@@ -286,7 +291,7 @@ void CameraController::cursorPosCallback(GLFWwindow* window, double xpos, double
         return;
     }
 
-    auto* controller = static_cast<CameraController*>(glfwGetWindowUserPointer(window));
+    auto* controller = sInstance_;
     if (!controller)
     {
         return;
@@ -335,7 +340,7 @@ void CameraController::scrollCallback(GLFWwindow* window, double xoffset, double
         return;
     }
 
-    auto* controller = static_cast<CameraController*>(glfwGetWindowUserPointer(window));
+    auto* controller = sInstance_;
     if (!controller)
     {
         return;
@@ -357,7 +362,7 @@ void CameraController::keyCallback(GLFWwindow* window, int key, int scancode, in
         return;
     }
 
-    auto* controller = static_cast<CameraController*>(glfwGetWindowUserPointer(window));
+    auto* controller = sInstance_;
     if (!controller)
     {
         return;

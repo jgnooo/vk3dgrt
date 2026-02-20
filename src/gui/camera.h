@@ -90,6 +90,9 @@ class CameraController
     static constexpr float kMinDistance = 0.1f;
     static constexpr float kMaxDistance = 1000.0f;
 
+    // Static instance for GLFW callback access (avoids glfwSetWindowUserPointer conflict)
+    static CameraController* sInstance_;
+
 public:
     CameraController()  = default;
     ~CameraController() = default;

@@ -467,7 +467,9 @@ void ImGuiManager::showRightPanel()
 
     ImGuiWindowFlags windowFlags =
         ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize;
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoFocusOnAppearing;
 
     if (ImGui::Begin("vk3dgrt", nullptr, windowFlags))
     {
