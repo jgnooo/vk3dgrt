@@ -96,6 +96,10 @@ class GRTScene : public Scene
     float    dofFocalDistance_ = 5.0f;    // Focus distance from camera
     uint32_t frameIndex_       = 0;       // Accumulation frame counter
 
+    // Shadow parameters
+    bool     shadowEnabled_   = false;
+    float    shadowIntensity_ = 0.3f;
+
 public:
     GRTScene()  = default;
     ~GRTScene() override = default;
@@ -208,6 +212,12 @@ public:
     float    getDoFFocalDistance() const { return dofFocalDistance_; }
     void     resetAccumulation() { frameIndex_ = 0; }
     uint32_t getFrameIndex() const { return frameIndex_; }
+
+    // Shadow settings
+    void  setShadowEnabled(bool enabled);
+    bool  isShadowEnabled() const { return shadowEnabled_; }
+    void  setShadowIntensity(float intensity);
+    float getShadowIntensity() const { return shadowIntensity_; }
 
 private:
     void computeSceneBounds();

@@ -878,6 +878,42 @@ void ImGuiManager::showRightPanel()
 
             ImGui::TreePop();
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        ImGui::Text("Shadow");
+        ImGui::SameLine();
+        if (ImGui::Checkbox("##ShadowEnable", &shadowEnabled_))
+        {
+            shadowEnabledChanged_ = true;
+            Log::INFO("GUI") << "Shadow " << (shadowEnabled_ ? "enabled" : "disabled");
+        }
+
+        ImGui::Spacing();
+
+        if (ImGui::TreeNode("Shadow Parameters"))
+        {
+            if (!shadowEnabled_)
+            {
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::SliderFloat("Shadow Intensity", &shadowIntensity_, 0.0f, 1.0f, "%.2f"))
+            {
+                shadowParamsChanged_ = true;
+                Log::INFO("GUI") << "Shadow Intensity changed: " << shadowIntensity_;
+            }
+
+            if (!shadowEnabled_)
+            {
+                ImGui::EndDisabled();
+                ImGui::TextDisabled("Enable Shadow to adjust");
+            }
+
+            ImGui::TreePop();
+        }
     }
     ImGui::End();
 }

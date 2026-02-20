@@ -95,6 +95,12 @@ class ImGuiManager
     float dofFocalDistance_  = 5.0f;
     bool  dofParamsChanged_  = false;
 
+    // Shadow parameters
+    bool  shadowEnabled_        = false;
+    bool  shadowEnabledChanged_ = false;
+    float shadowIntensity_      = 0.3f;
+    bool  shadowParamsChanged_  = false;
+
 public:
     void initialize(GLFWwindow* window,
                     VkContext* context,
@@ -201,6 +207,13 @@ public:
     float getDoFFocalDistance() const { return dofFocalDistance_; }
     bool  isDoFParamsChanged() const { return dofParamsChanged_; }
     void  clearDoFChanged() { dofEnabledChanged_ = false; dofParamsChanged_ = false; }
+
+    // Shadow parameters
+    bool  isShadowEnabled() const { return shadowEnabled_; }
+    bool  isShadowEnabledChanged() const { return shadowEnabledChanged_; }
+    float getShadowIntensity() const { return shadowIntensity_; }
+    bool  isShadowParamsChanged() const { return shadowParamsChanged_; }
+    void  clearShadowChanged() { shadowEnabledChanged_ = false; shadowParamsChanged_ = false; }
 };
 
 #endif // GUI_H

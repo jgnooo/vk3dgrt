@@ -381,6 +381,34 @@ void GRTScene::setDoFParams(float aperture, float focalDistance)
 }
 
 
+void GRTScene::setShadowEnabled(bool enabled)
+{
+    if (shadowEnabled_ != enabled)
+    {
+        shadowEnabled_ = enabled;
+        if (initialized)
+        {
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+    }
+}
+
+
+void GRTScene::setShadowIntensity(float intensity)
+{
+    if (shadowIntensity_ != intensity)
+    {
+        shadowIntensity_ = intensity;
+        if (initialized)
+        {
+            SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+            renderer.updateSceneBounds(boundsUBO);
+        }
+    }
+}
+
+
 void GRTScene::setVisualizeMode(uint32_t mode)
 {
     if (visualizeMode_ != mode)
@@ -709,6 +737,10 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
     ubo.ambientIntensity  = 0.2f;
     ubo.ambientColor      = glm::vec3(1.0f);
     ubo._pad2             = 0;
+
+    // Shadow parameters
+    ubo.enableShadow    = shadowEnabled_ ? 1u : 0u;
+    ubo.shadowIntensity = shadowIntensity_;
 
     return ubo;
 }

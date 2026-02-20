@@ -221,6 +221,39 @@ void main()
         }
     }
 
+    // Shadow: mesh casts shadow onto Gaussian particles
+    if (sceneBounds.enableShadow > 0 && sceneBounds.meshCount > 0)
+    {
+        float totalOpacity = 1.0 - transmittance;
+        if (totalOpacity > 0.05)
+        {
+            // Approximate Gaussian surface point (weighted average depth)
+            float avgDepth     = depth / max(totalOpacity, 0.001);
+            vec3  surfacePoint = rayOrigin + avgDepth * rayDirection;
+
+            // Trace shadow ray toward light direction (mesh TLAS only)
+            meshPayload.hitDist = INFINITE_DISTANCE;
+            traceRayEXT(
+                meshTlas,
+                gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT,
+                0xFF,
+                0, 0, 0,
+                surfacePoint,
+                T_EPSILON,
+                normalize(-sceneBounds.lightDir),
+                100.0,
+                1
+            );
+
+            // Mesh blocks light → darken proportional to Gaussian density
+            if (meshPayload.hitDist < INFINITE_DISTANCE)
+            {
+                float shadowFactor = mix(1.0, sceneBounds.shadowIntensity, totalOpacity);
+                radiance *= shadowFactor;
+            }
+        }
+    }
+
     // Apply render mode
     vec3 finalColor = radiance;
     if (sceneBounds.renderMode == RENDER_MODE_DEPTH)

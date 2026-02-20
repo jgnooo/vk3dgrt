@@ -101,10 +101,16 @@ struct SceneBoundsUBO
 
     glm::vec3 ambientColor      = glm::vec3(1.0f);
     uint32_t  _pad2             = 0;
+
+    // --- Shadow parameters (16 bytes) ---
+    uint32_t  enableShadow     = 0;
+    float     shadowIntensity  = 0.3f;
+    float     _shadowPad1      = 0.0f;
+    float     _shadowPad2      = 0.0f;
 };
 
 
-static_assert(sizeof(SceneBoundsUBO) == 128, "SceneBoundsUBO must match GLSL SceneBounds size");
+static_assert(sizeof(SceneBoundsUBO) == 144, "SceneBoundsUBO must match GLSL SceneBounds size");
 
 
 class Renderer

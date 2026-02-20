@@ -167,6 +167,12 @@ struct SceneBounds
 
     vec3  ambientColor;
     uint  _pad2;
+
+    // Shadow parameters
+    uint  enableShadow;       // 0: disabled, 1: enabled
+    float shadowIntensity;    // Shadow brightness (0.0=fully dark, 1.0=no shadow), default 0.3
+    float _shadowPad1;
+    float _shadowPad2;
 };
 
 

@@ -512,6 +512,17 @@ void VkEngine::draw()
         imguiManager.clearDoFChanged();
     }
 
+    // Handle Shadow parameter changes from GUI
+    if (imguiManager.isShadowEnabledChanged() || imguiManager.isShadowParamsChanged())
+    {
+        if (gs)
+        {
+            gs->setShadowEnabled(imguiManager.isShadowEnabled());
+            gs->setShadowIntensity(imguiManager.getShadowIntensity());
+        }
+        imguiManager.clearShadowChanged();
+    }
+
     // Finalize ImGui frame
     imguiManager.render();
 
