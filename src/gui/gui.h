@@ -59,12 +59,14 @@ class ImGuiManager
     bool shAvailable_     = false;
 
     // Mesh
-    bool insertPlane_           = false;
-    bool insertSphere_          = false;
-    bool insertTeapot_          = false;
-    int  removeMeshIndex_       = -1;
-    int  meshMaterialChangeIdx_ = -1;
-    int  meshMaterialNewType_   = 0;
+    bool  insertPlane_           = false;
+    bool  insertSphere_          = false;
+    bool  insertTeapot_          = false;
+    int   removeMeshIndex_       = -1;
+    int   meshMaterialChangeIdx_ = -1;
+    int   meshMaterialNewType_   = 0;
+    int   meshIORChangeIdx_      = -1;
+    float meshIORNewValue_       = 1.5f;
 
     // Mesh selection & transform
     int                    selectedMeshIndex_    = -1;
@@ -176,6 +178,9 @@ public:
     int  getMeshMaterialChangeIndex() const { return meshMaterialChangeIdx_; }
     int  getMeshMaterialNewType() const { return meshMaterialNewType_; }
     void clearMeshMaterialChange() { meshMaterialChangeIdx_ = -1; }
+    int   getMeshIORChangeIndex() const { return meshIORChangeIdx_; }
+    float getMeshIORNewValue() const { return meshIORNewValue_; }
+    void  clearMeshIORChange() { meshIORChangeIdx_ = -1; }
 
     // Mesh selection & transform
     int  getSelectedMeshIndex() const { return selectedMeshIndex_; }

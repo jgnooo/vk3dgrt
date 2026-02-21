@@ -268,9 +268,9 @@ MeshMaterialGPU toGPUMaterial(const MeshMaterial& mat, uint32_t indexOffset)
     gpu.color        = mat.color;
     gpu.materialType = static_cast<uint32_t>(mat.type);
     gpu.reflectivity = mat.reflectivity;
-    gpu.indexOffset   = indexOffset;
-    gpu._pad[0]      = 0.0f;
-    gpu._pad[1]      = 0.0f;
+    gpu.indexOffset  = indexOffset;
+    gpu.ior          = mat.ior;
+    gpu._pad         = 0.0f;
     return gpu;
 }
 

@@ -28,6 +28,7 @@ enum class MeshMaterialType : uint32_t
 {
     DIFFUSE    = 0,
     REFLECTIVE = 1,
+    REFRACTIVE = 2,
 };
 
 
@@ -36,16 +37,18 @@ struct MeshMaterial
     glm::vec3        color        = glm::vec3(0.8f);
     MeshMaterialType type         = MeshMaterialType::DIFFUSE;
     float            reflectivity = 0.8f;
+    float            ior          = 1.5f;   // Index of Refraction (glass default)
 };
 
 
 struct MeshMaterialGPU
 {
     glm::vec3 color;          // 12B
-    uint32_t  materialType;   //  4B  (0=diffuse, 1=reflective)
+    uint32_t  materialType;   //  4B  (0=diffuse, 1=reflective, 2=refractive)
     float     reflectivity;   //  4B
     uint32_t  indexOffset;    //  4B  triangle offset in combined index buffer
-    float     _pad[2];        //  8B
+    float     ior;            //  4B  Index of Refraction
+    float     _pad;           //  4B
 };
 
 

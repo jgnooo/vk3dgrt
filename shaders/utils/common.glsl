@@ -98,6 +98,7 @@ const float TRANSMITTANCE_THRESHOLD = 0.01;
 // --------------------------------------------------- //
 #define MATERIAL_DIFFUSE     0
 #define MATERIAL_REFLECTIVE  1
+#define MATERIAL_REFRACTIVE  2
 
 
 // --------------------------------------------------- //
@@ -108,15 +109,17 @@ const float TRANSMITTANCE_THRESHOLD = 0.01;
 
 
 // --------------------------------------------------- //
-//  MeshHitPayload - Payload for mesh ray hits (std430, 32B)
+//  MeshHitPayload - Payload for mesh ray hits
 // --------------------------------------------------- //
 struct MeshHitPayload
 {
     vec3  normal;
     float hitDist;
     vec3  color;
-    uint  materialType;  // MATERIAL_DIFFUSE or MATERIAL_REFLECTIVE
+    uint  materialType;   // MATERIAL_DIFFUSE, MATERIAL_REFLECTIVE, MATERIAL_REFRACTIVE
     float reflectivity;
+    float ior;            // Index of Refraction
+    vec2  _pad;
 };
 
 
@@ -129,8 +132,8 @@ struct MeshMaterialGPU
     uint  materialType;
     float reflectivity;
     uint  indexOffset;    // triangle offset in combined index buffer
-    float _pad1;
-    float _pad2;
+    float ior;            // Index of Refraction
+    float _pad;
 };
 
 
@@ -174,6 +177,16 @@ struct SceneBounds
     float _shadowPad1;
     float _shadowPad2;
 };
+
+
+// --------------------------------------------------- //
+//  Fresnel - Schlick approximation
+// --------------------------------------------------- //
+float fresnelSchlick(float cosTheta, float n1, float n2)
+{
+    float R0 = ((n1 - n2) / (n1 + n2)) * ((n1 - n2) / (n1 + n2));
+    return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
+}
 
 
 // --------------------------------------------------- //

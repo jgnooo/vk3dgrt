@@ -183,6 +183,9 @@ public:
     // Per-mesh material type
     void setMeshMaterial(uint32_t index, MeshMaterialType type);
 
+    // Per-mesh IOR (Index of Refraction)
+    void setMeshIOR(uint32_t index, float ior);
+
     // Per-mesh transform (CPU-only update, GPU rebuild happens in recordCommands)
     void updateMeshTransform(uint32_t index, const MeshTransform& transform);
 

@@ -691,7 +691,7 @@ void ImGuiManager::showRightPanel()
 
                     float availWidth    = ImGui::GetContentRegionAvail().x;
                     float buttonSpacing = ImGui::GetStyle().ItemSpacing.x;
-                    const char* materialLabels[] = {"Diffuse", "Reflective"};
+                    const char* materialLabels[] = {"Diffuse", "Reflective", "Refractive"};
 
                     float removeWidth = ImGui::CalcTextSize("X").x
                                       + ImGui::GetStyle().FramePadding.x * 2.0f;
@@ -733,10 +733,10 @@ void ImGuiManager::showRightPanel()
                         }
                         ImGui::PopStyleColor();
 
-                        // Material type combo
+                        // Material type combo (Diffuse / Reflective / Refractive)
                         ImGui::SameLine(0.0f, buttonSpacing);
                         ImGui::SetNextItemWidth(comboWidth);
-                        if (ImGui::Combo("##mat", &matType, materialLabels, 2))
+                        if (ImGui::Combo("##mat", &matType, materialLabels, 3))
                         {
                             meshMaterialChangeIdx_ = static_cast<int>(i);
                             meshMaterialNewType_   = matType;

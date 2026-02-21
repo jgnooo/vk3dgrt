@@ -410,6 +410,19 @@ void VkEngine::draw()
         imguiManager.clearMeshMaterialChange();
     }
 
+    // Handle per-mesh IOR change from GUI
+    if (imguiManager.getMeshIORChangeIndex() >= 0)
+    {
+        auto* gs = sceneManager.getGRTScene();
+        if (gs)
+        {
+            gs->setMeshIOR(
+                static_cast<uint32_t>(imguiManager.getMeshIORChangeIndex()),
+                imguiManager.getMeshIORNewValue());
+        }
+        imguiManager.clearMeshIORChange();
+    }
+
     // Handle mesh insertion from GUI
     {
         static std::mt19937 rng(std::random_device{}());

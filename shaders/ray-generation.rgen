@@ -213,6 +213,53 @@ void main()
             currentDirection = reflDir;
             tMin             = 0.0;
         }
+        else if (meshPayload.materialType == MATERIAL_REFRACTIVE)
+        {
+            vec3 N = meshPayload.normal;
+            vec3 I = currentDirection;
+
+            // Medium boundary check: dot(I, N) < 0 → entering (air→glass), > 0 → exiting (glass→air)
+            bool entering   = (dot(I, N) < 0.0);
+            vec3 faceNormal = entering ? N : -N;
+
+            float n1  = entering ? 1.0 : meshPayload.ior;
+            float n2  = entering ? meshPayload.ior : 1.0;
+            float eta = n1 / n2;
+
+            // Fresnel reflectance (Schlick approximation)
+            float cosI   = abs(dot(I, faceNormal));
+            float fresnel = fresnelSchlick(cosI, n1, n2);
+
+            vec3 hitPoint   = currentOrigin + meshHitDist * I;
+            vec3 refractDir = refract(I, faceNormal, eta);
+
+            if (length(refractDir) < 0.001)
+            {
+                // Total Internal Reflection → fallback to reflection
+                vec3 reflDir = reflect(I, faceNormal);
+
+                currentOrigin    = hitPoint + faceNormal * T_EPSILON;
+                currentDirection = reflDir;
+            }
+            else
+            {
+                // Standard refraction: distribute energy by Fresnel ratio
+                float reflWeight = fresnel * transmittance;
+                float refrWeight = (1.0 - fresnel) * transmittance;
+
+                // Reflection component: small surface color contribution
+                radiance += litColor * reflWeight * 0.1;
+
+                // Keep most energy in the refracted ray
+                transmittance = refrWeight + reflWeight * 0.9;
+
+                // Offset: refracted ray continues on the opposite side of the surface
+                currentOrigin    = hitPoint - faceNormal * T_EPSILON;
+                currentDirection = refractDir;
+            }
+
+            tMin = 0.0;
+        }
         else
         {
             radiance     += litColor * transmittance;

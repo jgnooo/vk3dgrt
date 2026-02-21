@@ -613,6 +613,30 @@ void GRTScene::setMeshMaterial(uint32_t index, MeshMaterialType type)
 }
 
 
+void GRTScene::setMeshIOR(uint32_t index, float ior)
+{
+    if (index >= meshInstances_.size())
+    {
+        return;
+    }
+
+    float clamped = glm::clamp(ior, 1.0f, 3.0f);
+    if (meshInstances_[index].material.ior == clamped)
+    {
+        return;
+    }
+
+    meshInstances_[index].material.ior = clamped;
+
+    if (initialized)
+    {
+        rebuildMeshResources();
+        SceneBoundsUBO boundsUBO = buildSceneBoundsUBO();
+        renderer.updateSceneBounds(boundsUBO);
+    }
+}
+
+
 void GRTScene::setReflectionEnabled(bool enabled)
 {
     if (reflectionEnabled_ != enabled)
@@ -711,18 +735,23 @@ SceneBoundsUBO GRTScene::buildSceneBoundsUBO() const
     ubo.shDegree     = shDegree_;
     ubo.kernelDegree = kernelDegree_;
 
-    // Reflection parameters (derived from per-mesh material types)
+    // Reflection/Refraction parameters (derived from per-mesh material types)
     bool anyReflective = false;
+    bool anyRefractive = false;
     for (const auto& mesh : meshInstances_)
     {
         if (mesh.material.type == MeshMaterialType::REFLECTIVE)
-        {
             anyReflective = true;
-            break;
-        }
+        if (mesh.material.type == MeshMaterialType::REFRACTIVE)
+            anyRefractive = true;
     }
-    ubo.enableReflection = anyReflective ? 1 : 0;
-    ubo.maxBounces       = maxBounces_;
+    ubo.enableReflection = (anyReflective || anyRefractive) ? 1 : 0;
+
+    // Refraction requires at least 3 bounces: enter + exit + background Gaussian render
+    uint32_t effectiveMaxBounces = maxBounces_;
+    if (anyRefractive)
+        effectiveMaxBounces = std::max(effectiveMaxBounces, 3u);
+    ubo.maxBounces = effectiveMaxBounces;
     ubo.meshCount        = static_cast<uint32_t>(meshInstances_.size());
     ubo.renderMode       = renderMode_;
 

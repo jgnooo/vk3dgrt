@@ -57,12 +57,18 @@ void main()
         barycentrics.z * n2
     );
 
-    // Transform normal to world space
+    // Transform normal to world space (geometry normal, unflipped)
     normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
 
-    if (dot(normal, gl_WorldRayDirectionEXT) > 0.0)
+    // For non-refractive materials, flip normal to face the ray.
+    // For refractive materials, preserve geometry normal so raygen can
+    // determine entry/exit direction via dot(I, N) sign.
+    if (material.materialType != MATERIAL_REFRACTIVE)
     {
-        normal = -normal; // Flip normal to face the ray
+        if (dot(normal, gl_WorldRayDirectionEXT) > 0.0)
+        {
+            normal = -normal;
+        }
     }
 
     meshPayload.normal       = normal;
@@ -70,4 +76,5 @@ void main()
     meshPayload.color        = material.color;
     meshPayload.materialType = material.materialType;
     meshPayload.reflectivity = material.reflectivity;
+    meshPayload.ior          = material.ior;
 }
