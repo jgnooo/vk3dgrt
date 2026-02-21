@@ -39,9 +39,9 @@ Managed via Git submodules.
 | OS | Windows 11 Home |
 | GPU | NVIDIA GeForce RTX 5070 |
 | Driver | 32.0.15.7688 |
-| Vulkan SDK | 1.3.296.0 |
+| Vulkan SDK | 1.4.328.1 |
 | MSVC | 19.38.33135 (VS 2022) |
-| CMake | 3.27.2 |
+| CMake | 3.30.5 |
 
 ## 🔨 Build
 
@@ -91,6 +91,10 @@ cmake --build build --config Release
   </tr>
   <tr>
     <td align="center">
+      <strong>Refraction</strong><br>
+      <img src="assets/refraction.png" width="400" alt="Gizmo">
+    </td>
+    <td align="center">
       <strong>Mesh Gizmo</strong><br>
       <img src="assets/gizmo.png" width="400" alt="Gizmo">
     </td>
@@ -108,8 +112,17 @@ vk3dgrt/
 │   ├── 3dgrt/                # 3DGRT implementation (scene, loader, renderer, accel struct)
 │   └── gui/                  # ImGui integration and camera control
 ├── shaders/                  # GLSL shaders (rgen, rchit, rahit, rmiss, utils/)
-├── data/                     # PLY scene data
+├── data/                     # PLY scene, teapot.obj
 └── dependencies/             # External libraries (git submodules)
+```
+
+## 📥 Assets
+
+Place the following file in `data/` directory before running:
+
+```powershell
+# Download teapot.obj (used by nvpro-samples/vk_gaussian_splatting)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/alecjacobson/common-3d-test-models/master/data/teapot.obj" -OutFile "data/teapot.obj"
 ```
 
 ## 📚 References
@@ -122,18 +135,7 @@ vk3dgrt/
 - Vulkan-based official implementation: [nvpro-samples/vk_gaussian_splatting](https://github.com/nvpro-samples/vk_gaussian_splatting)
 - [Claude](https://claude.ai) (Anthropic) assisted with code refactoring and rendering optimization.
 
-## 📥 Assets
-
-Place the following file in `data/` directory before running:
-
-```powershell
-# Download teapot.obj (used by nvpro-samples/vk_gaussian_splatting)
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/alecjacobson/common-3d-test-models/master/data/teapot.obj" -OutFile "data/teapot.obj"
-```
-
 ## 📋 Todo
 
-- [ ] **Refraction**
-- [ ] **Shadow**
 - [ ] **Keyboard Events**
 - [ ] **Test on Ubuntu**
