@@ -2,8 +2,6 @@
 
 ![screenshot](assets/main.png)
 
-_Scene Downloaded from: [LINK](https://huggingface.co/datasets/Voxel51/gaussian_splatting)_
-
 ## 📒 TL;DR
 
 A Vulkan-based implementation of the 3DGRT (3D Gaussian Ray Tracing) paper (SIGGRAPH Asia 2024), built as a personal project to learn the Vulkan API and GPU ray tracing pipeline.
@@ -118,12 +116,16 @@ vk3dgrt/
 
 ## 📥 Assets
 
-Place the following file in `data/` directory before running:
+Place the following mesh teapot object file in `data/` directory before running:
 
 ```powershell
 # Download teapot.obj (used by nvpro-samples/vk_gaussian_splatting)
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/alecjacobson/common-3d-test-models/master/data/teapot.obj" -OutFile "data/teapot.obj"
 ```
+
+Scene downloaded from:
+- [LINK 1](https://huggingface.co/datasets/Voxel51/gaussian_splatting)
+- [LINK 2](https://note.com/steam_studio/n/ne9736d94f162)
 
 ## 📚 References
 
