@@ -5,7 +5,7 @@
 ## 📒 TL;DR
 
 A Vulkan-based implementation of the 3DGRT (3D Gaussian Ray Tracing) paper (SIGGRAPH Asia 2024), built as a personal project to learn the Vulkan API and GPU ray tracing pipeline.
-Unlike traditional rasterization-based 3D Gaussian Splatting, 3DGRT traces rays against a BVH of Gaussian particles, enabling secondary lighting effects and complex camera models. The current implementation supports reflection, depth of field, and fisheye camera rendering.
+Unlike traditional rasterization-based 3D Gaussian Splatting, 3DGRT traces rays against a BVH of Gaussian particles, enabling secondary lighting effects and complex camera models. The current implementation supports reflection, refraction, simple shadow, depth of field, and fisheye camera rendering.
 
 ## ⚙️ Requirements
 
