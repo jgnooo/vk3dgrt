@@ -105,13 +105,15 @@ cmake --build build --config Release
 ```
 vk3dgrt/
 ├── src/
-│   ├── main.cpp              # Entry point
-│   ├── vulkan/               # Vulkan engine (context, pipeline, buffer, image, etc.)
-│   ├── 3dgrt/                # 3DGRT implementation (scene, loader, renderer, accel struct)
-│   └── gui/                  # ImGui integration and camera control
-├── shaders/                  # GLSL shaders (rgen, rchit, rahit, rmiss, utils/)
-├── data/                     # PLY scene, teapot.obj
-└── dependencies/             # External libraries (git submodules)
+│   ├── main.cpp           # Entry point
+│   ├── vulkan/            # Vulkan engine (context, pipeline, buffer, image, accel struct)
+│   ├── 3dgrt/             # 3DGRT (scene, renderer, loader, BVH, descriptors)
+│   └── gui/               # ImGui, camera, gizmos
+├── shaders/               # GLSL shaders (rgen, rchit, rahit, rmiss, comp, utils/)
+├── data/                  # Scene assets (PLY, OBJ)
+├── docs/                  # Technical analysis documents
+├── plan/                  # Implementation plans
+└── dependencies/          # External libraries (git submodules)
 ```
 
 ## 📥 Assets
@@ -136,8 +138,3 @@ Scene downloaded from:
 - Official implementation: [nv-tlabs/3dgrut](https://github.com/nv-tlabs/3dgrut)
 - Vulkan-based official implementation: [nvpro-samples/vk_gaussian_splatting](https://github.com/nvpro-samples/vk_gaussian_splatting)
 - [Claude](https://claude.ai) (Anthropic) assisted with code refactoring and rendering optimization.
-
-## 📋 Todo
-
-- [ ] **Keyboard Events**
-- [ ] **Test on Ubuntu**
